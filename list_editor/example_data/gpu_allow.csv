@@ -1,0 +1,6 @@
+MinApi,MinDriver,GpuName,DeviceID,VendorID,Brand
+34,2150252544,^Adreno (TM) 7,0,0,Adreno
+34,2150531090,^Adreno (TM) 8,0,0,Adreno
+34,0,Samsung Xclipse 920,0,0,Xclipse
+34,0,Samsung Xclipse 940,0,0,Xclipse
+34,192937984,^Mali-G7,0,0,Mali

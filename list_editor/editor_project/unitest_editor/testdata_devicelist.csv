@@ -1,0 +1,4 @@
+Brand,Device,MinApi,MinDriver
+google,bluejay,34,0
+google,raven,34,0
+fakefone,notafone,33,256
