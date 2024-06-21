@@ -34,4 +34,5 @@ feedback will help refine the recommendation list.
 
 ## Version history
 
+1.0.1 - (6/21/2024) - Updated device list, no code changes.
 1.0 - (05/14/2024) - Initial release.
