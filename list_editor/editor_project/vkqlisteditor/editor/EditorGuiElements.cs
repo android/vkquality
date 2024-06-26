@@ -84,8 +84,10 @@ public class EditorGuiElements
     private MenuItem [] CreateExportMenuItems (RuntimeData runtimeData)
     {
         List<MenuItem> menuItems = new List<MenuItem> ();
-        menuItems.Add(new MenuItem("_Export .AAR Library", "", () => MenuCommands.ExportAar(runtimeData), null, null,
+        menuItems.Add(new MenuItem("_Export .VKQ Data File", "", () => MenuCommands.ExportVkq(runtimeData), null, null,
             Key.E | Key.CtrlMask));
+        menuItems.Add(new MenuItem("_Create .AAR Library Project", "", () => MenuCommands.ExportAar(runtimeData), null, null,
+            Key.L | Key.CtrlMask));
         return menuItems.ToArray ();
     }
 

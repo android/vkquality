@@ -23,7 +23,14 @@ public class GpuListCsvImporter
 {
     public static void ImportGpuListCsvFile(RuntimeData runtimeData, string csvPath, bool allowList)
     {
-        runtimeData.DeviceAllowList.Clear();
+        if (allowList)
+        {
+            runtimeData.GpuPredictAllowList.Clear();
+        }
+        else
+        {
+            runtimeData.GpuPredictDenyList.Clear();
+        }
 
         if (!File.Exists(csvPath)) return;
 

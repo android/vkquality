@@ -23,7 +23,7 @@ using Terminal.Gui;
 
 public static class MenuCommands
 {
-    private static bool ExportVkq(RuntimeData runtimeData)
+    public static bool ExportVkq(RuntimeData runtimeData)
     {
         bool success = false;
         if (runtimeData is {MainProject: not null, ProjectPath: not null})
@@ -45,43 +45,16 @@ public static class MenuCommands
             // Generate the .vkq file to copy into the .aar
             if (!ExportVkq(runtimeData)) return;
 
-            var templateFile = Path.GetDirectoryName(runtimeData.ProjectPath);
-            templateFile = $"{templateFile}{Path.DirectorySeparatorChar}aar-template.zip";
-            AarTemplate.CreateAarTemplateFile(templateFile);
-            using var templateStream = new FileStream(templateFile, FileMode.Open);
-            using var templateArchive = new ZipArchive(templateStream, ZipArchiveMode.Read);
-            
-            var dataFilename = Path.ChangeExtension(Path.GetFileName(runtimeData.ProjectPath), "vkq"); 
-            var exportPath = Path.ChangeExtension(runtimeData.ProjectPath, "aar");
-            using var aarFile = new FileStream(exportPath, FileMode.Create);
-            using var archive = new ZipArchive(aarFile, ZipArchiveMode.Create);
-
-            var trimString = $"aar-template{Path.DirectorySeparatorChar}";
-            var newRoot = Path.ChangeExtension(Path.GetFileName(runtimeData.ProjectPath), null); 
-            
-            // Copy the template files
-            foreach (var entry in templateArchive.Entries)
-            {
-                if (!entry.FullName.StartsWith(trimString)) continue;
-                var trimmedName = entry.FullName.Substring(trimString.Length);
-                if (trimmedName.Contains(".DS_Store")) continue;
-                if (string.IsNullOrEmpty(trimmedName)) continue;
-                var newName = $"{newRoot}{Path.DirectorySeparatorChar}{trimmedName}";
-                var copyEntry = archive.CreateEntry(newName);
-                using var copyToStream = copyEntry.Open();
-                var copyFromStream = entry.Open();
-                copyFromStream.CopyTo(copyToStream);
-            }
-            
-            // Copy our new asset file
-            var assetPath = $"{newRoot}{Path.DirectorySeparatorChar}assets{Path.DirectorySeparatorChar}{dataFilename}";
-            var exportEntry = archive.CreateEntry(assetPath);
             var vkqPath = Path.ChangeExtension(runtimeData.ProjectPath, "vkq");
-            using var vkqStream = new FileStream(vkqPath, FileMode.Open);
-            using var vkqReader = new StreamReader(vkqStream);
-            vkqStream.CopyTo(exportEntry.Open());
-            
-            File.Delete(templateFile);
+            var templatePath = Path.GetDirectoryName(runtimeData.ProjectPath);
+            templatePath = $"{templatePath}{Path.DirectorySeparatorChar}templateproject";
+
+            if (Directory.Exists(templatePath))
+            {
+                Directory.Delete(templatePath, true);
+            }
+            Directory.CreateDirectory(templatePath);
+            AarTemplate.CreateProjectTemplate(vkqPath, templatePath);
         }
     }
     
