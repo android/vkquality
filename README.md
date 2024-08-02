@@ -34,5 +34,10 @@ feedback will help refine the recommendation list.
 
 ## Version history
 
-1.0.1 - (6/21/2024) - Updated device list, no code changes.
-1.0 - (05/14/2024) - Initial release.
+* 1.1 - (08/02/2024) - Added mitigation code to fix issues of certain OEM devices
+with certain SoCs on odler drivers crashing from VkQuality attempting to determine
+driver version. Added new `StartVkQualityWithFlags` call with flags to disable/change
+the startup mitigation flow. See the `VkQualityTestActivity.java` file for details.
+No changes to the default device list file in this version.
+* 1.0.1 - (06/21/2024) - Updated device list, no code changes.
+* 1.0 - (05/14/2024) - Initial release.

@@ -17,12 +17,16 @@ package com.google.android.games.vkquality;
 
 import android.content.Context;
 import android.content.res.AssetManager;
+import android.util.Log;
 
 public class VKQuality {
     // Used to load the 'vkqualitytest' library on application startup.
     static {
         System.loadLibrary("vkquality");
     }
+
+    public static final int INIT_FLAG_SKIP_STARTUP_MITIGATION = 1;
+    public static final int INIT_FLAG_GLES_ONLY_STARTUP_MITIGATION_DEVICES = 2;
 
     public static final int INIT_SUCCESS = 0;
     public static final int ERROR_INITIALIZATION_FAILURE = -1;
@@ -43,27 +47,83 @@ public class VKQuality {
 
     private static final String DEFAULT_QUALITY_FILE = "vkqualitydata.vkq";
 
-    public VKQuality(Context appContext) {
+    public VKQuality(Context appContext)
+    {
         mAppContext = appContext;
+        mStartupMitigation = false;
+        mMitigationRecommendation = RECOMMENDATION_GLES_BECAUSE_OLD_DRIVER;
+        mFlags = 0;
     }
 
     public int StartVkQuality(String customDataFilename) {
+        return StartVkQualityWithFlags(customDataFilename, 0);
+    }
+
+    public int StartVkQualityWithFlags(String customDataFilename, int flags)
+    {
+        mFlags = flags;
         String dataFilename = customDataFilename.isEmpty() ?
                 DEFAULT_QUALITY_FILE : customDataFilename;
+
+        if ((mFlags & INIT_FLAG_SKIP_STARTUP_MITIGATION) == 0)
+        {
+            // Startup mitigation path to check against calling vkCreateInstance
+            // on devices which may crash
+            RunStartupMitigation();
+            if (mStartupMitigation)
+            {
+                return INIT_SUCCESS;
+            }
+        }
+        else
+        {
+            Log.d("VKQUALITY", "Skipping startup mitigation because of flag");
+        }
         return startVkQuality(mAppContext.getResources().getAssets(),
                 mAppContext.getFilesDir().getAbsolutePath(),
                 dataFilename);
     }
 
-    public void StopVkQuality() {
-        stopVkQuality();
+    public void StopVkQuality()
+    {
+        if (!mStartupMitigation) {
+            stopVkQuality();
+        }
     }
 
     public int GetVkQuality() {
+        if (mStartupMitigation)
+        {
+            return mMitigationRecommendation;
+        }
         return getVkQuality();
     }
 
+    private void RunStartupMitigation()
+    {
+        // Certain device/SoC combinations are experiencing crashes when attempting
+        // to query the Vulkan driver version. Screen out potentially affected devices
+        // running affected versions of Android and issue a default recommendation
+        // based on SoC and security patch date as a proxy for driver version.
+        StartupMitigation startupMitigation = new StartupMitigation();
+        startupMitigation.createMitigationDeviceList();
+        if (startupMitigation.isDeviceAffected() == StartupMitigation.DEVICE_AFFECTED)
+        {
+            mStartupMitigation = true;
+            if (startupMitigation.useVulkanOnAffectedDevice() &&
+                    ((mFlags & INIT_FLAG_GLES_ONLY_STARTUP_MITIGATION_DEVICES) == 0))
+            {
+                mMitigationRecommendation = RECOMMENDATION_VULKAN_BECAUSE_DEVICE_MATCH;
+            }
+        }
+        Log.d("VKQUALITY", startupMitigation.getResultString());
+    }
+
     private final Context mAppContext;
+
+    private int mFlags;
+    private boolean mStartupMitigation;
+    private int mMitigationRecommendation;
 
     // JNI native functions
     public native int startVkQuality(AssetManager jasset_manager, String storage_path,
