@@ -155,6 +155,88 @@ public class Tests
     }
 
     [Test]
+    public void DriverFingerprintExportTest()
+    {
+        string socNameA = "ASoC"; // 00
+        string socNameB = "SoCB"; // 06
+        string socNameC = "ZFakeSoC"; // 07
+        string fingerprintString1 = "OpenGL ES 3.2 V@0615.73 (GIT@8f5499ec14, Ie6ef1a0a80, 1689341690) (Date:07/14/23)"; // 01
+        string fingerprintString2 = "OpenGL ES 3.2 V@0615.80 (GIT@406382a20f, I986008d073, 1704447428) (Date:01/05/24)"; // 02
+        string fingerprintString3 = "OpenGL ES 3.2 v100.30.03"; // 03
+        string fingerprintString4 = "OpenGL ES 3.2 v101.19.00"; // 04
+        string fingerprintString5 = "OpenGL ES 3.2 v99.10.02"; // 05
+        
+        StringTable stringTable = new();
+        stringTable.AddStringToTable(socNameA);
+        stringTable.AddStringToTable(socNameB);
+        stringTable.AddStringToTable(socNameC);
+        stringTable.AddStringToTable(fingerprintString1);
+        stringTable.AddStringToTable(fingerprintString2);
+        stringTable.AddStringToTable(fingerprintString3);
+        stringTable.AddStringToTable(fingerprintString4);
+        stringTable.AddStringToTable(fingerprintString5);
+        
+        DriverFingerprintRecord socA = new(socNameA, fingerprintString1);
+        DriverFingerprintRecord socA2 = new(socNameA, fingerprintString2);
+        DriverFingerprintRecord socB = new(socNameB, fingerprintString3);
+        DriverFingerprintRecord socB2 = new(socNameB, fingerprintString4);
+        DriverFingerprintRecord socB3 = new(socNameB, fingerprintString5);
+        DriverFingerprintRecord socC = new(socNameC, fingerprintString3);
+        DriverFingerprintRecord socC2 = new(socNameC, fingerprintString4);
+        DriverFingerprintRecord socC3 = new(socNameC, fingerprintString5);
+
+        DriverFingerprintExport driverExport = new();
+        driverExport.AddDriverFingerprint(socA.Soc, socA.DriverFingerprint);
+        driverExport.AddDriverFingerprint(socA2.Soc, socA2.DriverFingerprint);
+        driverExport.AddDriverFingerprint(socB.Soc, socB.DriverFingerprint);
+        driverExport.AddDriverFingerprint(socB2.Soc, socB2.DriverFingerprint);
+        driverExport.AddDriverFingerprint(socB3.Soc, socB3.DriverFingerprint);
+        driverExport.AddDriverFingerprint(socC.Soc, socC.DriverFingerprint);
+        driverExport.AddDriverFingerprint(socC2.Soc, socC2.DriverFingerprint);
+        driverExport.AddDriverFingerprint(socC3.Soc, socC3.DriverFingerprint);
+        driverExport.GenerateLists();
+        
+        int fingerprintTableSize = driverExport.GetFingerprintTableSize();
+        Assert.That(fingerprintTableSize, Is.EqualTo(32));
+    
+        int socTableSize = driverExport.GetSocTableSize();
+        Assert.That(socTableSize, Is.EqualTo(36));
+        
+        byte[] fingerprintExportBuffer = new byte[fingerprintTableSize];
+        Span<byte> fingerprintSpan = fingerprintExportBuffer;
+        int fingerprintExportCount = driverExport.ExportFingerprintTable(fingerprintSpan, stringTable);
+        Assert.That(fingerprintExportCount, Is.EqualTo(8));
+        
+        var fingerprintTable = MemoryMarshal.Cast<byte, uint>(fingerprintSpan);
+        Assert.That(fingerprintTable[0], Is.EqualTo(2));
+        Assert.That(fingerprintTable[1], Is.EqualTo(3));
+        Assert.That(fingerprintTable[2], Is.EqualTo(4));
+        Assert.That(fingerprintTable[3], Is.EqualTo(5));
+        Assert.That(fingerprintTable[4], Is.EqualTo(6));
+        Assert.That(fingerprintTable[5], Is.EqualTo(4));
+        Assert.That(fingerprintTable[6], Is.EqualTo(5));
+        Assert.That(fingerprintTable[7], Is.EqualTo(6));
+        
+        byte[] socExportBuffer = new byte[socTableSize];
+        Span<byte> socSpan = socExportBuffer;
+        int socExportCount = driverExport.ExportSocTable(socSpan, stringTable);
+        Assert.That(socExportCount, Is.EqualTo(3));
+        
+        var socTable = MemoryMarshal.Cast<byte, uint>(socSpan);
+        Assert.That(socTable[0], Is.EqualTo(2));
+        Assert.That(socTable[1], Is.EqualTo(0));
+        Assert.That(socTable[2], Is.EqualTo(1));
+        
+        Assert.That(socTable[3], Is.EqualTo(3));
+        Assert.That(socTable[4], Is.EqualTo(2));
+        Assert.That(socTable[5], Is.EqualTo(7));
+        
+        Assert.That(socTable[6], Is.EqualTo(3));
+        Assert.That(socTable[7], Is.EqualTo(5));
+        Assert.That(socTable[8], Is.EqualTo(8));
+    }
+
+    [Test]
     public void GpuTableExportTest()
     {
         string deviceNameA = "ZanyGpu 500"; // 1
@@ -259,5 +341,25 @@ public class Tests
         Assert.That(runtimeData.GpuPredictAllowList[1].VendorId, Is.EqualTo(100));
         Assert.That(runtimeData.GpuPredictAllowList[1].MinApi, Is.EqualTo(33));
         Assert.That(runtimeData.GpuPredictAllowList[1].DriverVersion, Is.EqualTo(128));
+    }
+
+    [Test]
+    public void DriverFingerprintCsvImportTest()
+    {
+        var currentDirectory = System.IO.Directory.GetCurrentDirectory();
+        var csvPath = $"{currentDirectory}{Path.DirectorySeparatorChar}testdata_driverfingerprint.csv";
+        
+        Assert.That(File.Exists(csvPath), Is.EqualTo(true));
+
+        RuntimeData runtimeData = new();
+        DriverFingerprintCsvImporter.ImportDriverFingerprintCsvFile(runtimeData, csvPath, true);
+
+        Assert.That(runtimeData.DriverAllowList.Count, Is.EqualTo(2));
+        
+        Assert.That(runtimeData.DriverAllowList[0].Soc, Is.EqualTo("Chipz1000"));
+        Assert.That(runtimeData.DriverAllowList[0].DriverFingerprint, Is.EqualTo("OpenGL ES 3.2 V@0615.73 (GIT@8f5499ec14, Ie6ef1a0a80, 1689341690) (Date:07/14/23)"));
+
+        Assert.That(runtimeData.DriverAllowList[1].Soc, Is.EqualTo("Chipz2000"));
+        Assert.That(runtimeData.DriverAllowList[1].DriverFingerprint, Is.EqualTo("OpenGL ES 3.2 V@0615.80 (GIT@406382a20f, I986008d073, 1704447428) (Date:01/05/24)"));
     }
 }

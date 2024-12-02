@@ -110,8 +110,10 @@ public class EditorGuiElements
         List<MenuItem> menuItems = new List<MenuItem> ();
         menuItems.Add(new MenuItem("_Import Device List CSV", "", () => MenuCommands.ImportDeviceListCsv(runtimeData, EditorMainWindow),
             null, null, Key.D1 | Key.CtrlMask));
-        menuItems.Add(new MenuItem("_Import GPU Allow CSV", "", () => MenuCommands.ImportGpuAllowListCsv(runtimeData, EditorMainWindow), null, null, Key.D2 | Key.CtrlMask));
-        menuItems.Add(new MenuItem("_Import GPU Deny CSV", "", () => MenuCommands.ImportGpuDenyListCsv(runtimeData, EditorMainWindow), null, null, Key.D3 | Key.CtrlMask));
+        menuItems.Add(new MenuItem("_Import Driver Allow CSV", "", () => MenuCommands.ImportDriverAllowListCsv(runtimeData, EditorMainWindow), null, null, Key.D2 | Key.CtrlMask));
+        menuItems.Add(new MenuItem("_Import Driver Deny CSV", "", () => MenuCommands.ImportDriverDenyListCsv(runtimeData, EditorMainWindow), null, null, Key.D3 | Key.CtrlMask));
+        menuItems.Add(new MenuItem("_Import GPU Allow CSV", "", () => MenuCommands.ImportGpuAllowListCsv(runtimeData, EditorMainWindow), null, null, Key.D4 | Key.CtrlMask));
+        menuItems.Add(new MenuItem("_Import GPU Deny CSV", "", () => MenuCommands.ImportGpuDenyListCsv(runtimeData, EditorMainWindow), null, null, Key.D5 | Key.CtrlMask));
         return menuItems.ToArray ();
     }
     

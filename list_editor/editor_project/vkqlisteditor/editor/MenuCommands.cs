@@ -150,6 +150,15 @@ public static class MenuCommands
                 {
                     runtimeData.DeviceAllowList = new List<DeviceAllowListRecord>(runtimeData.MainProject.DeviceAllowList);
                 }
+
+                if (runtimeData.MainProject.DriverAllowList != null)
+                {
+                    runtimeData.DriverAllowList = new List<DriverFingerprintRecord>(runtimeData.MainProject.DriverAllowList);
+                }
+                if (runtimeData.MainProject.DriverDenyList != null)
+                {
+                    runtimeData.DriverDenyList = new List<DriverFingerprintRecord>(runtimeData.MainProject.DriverDenyList);
+                }
                 if (runtimeData.MainProject.GpuPredictAllowList != null)
                 {
                     runtimeData.GpuPredictAllowList = new List<GpuPredictRecord>(runtimeData.MainProject.GpuPredictAllowList);
@@ -168,6 +177,8 @@ public static class MenuCommands
         if (runtimeData.MainProject != null)
         {
             runtimeData.MainProject.DeviceAllowList = runtimeData.DeviceAllowList.ToArray();
+            runtimeData.MainProject.DriverAllowList = runtimeData.DriverAllowList.ToArray();
+            runtimeData.MainProject.DriverDenyList = runtimeData.DriverDenyList.ToArray();
             runtimeData.MainProject.GpuPredictAllowList = runtimeData.GpuPredictAllowList.ToArray();
             runtimeData.MainProject.GpuPredictDenyList = runtimeData.GpuPredictDenyList.ToArray();
             var jsonString = JsonSerializer.Serialize(runtimeData.MainProject);
@@ -207,6 +218,20 @@ public static class MenuCommands
         DeviceListCsvImporter.ImportDeviceListCsvFile(runtimeData, csvPath);
     }
 
+    public static void ImportDriverAllowListCsv(RuntimeData runtimeData, EditorWindow? editorWindow)
+    {
+        var csvPath = SelectCsvFile(runtimeData, editorWindow, "Open a driver allow list CSV file");
+        if (string.IsNullOrEmpty(csvPath)) return;
+        DriverFingerprintCsvImporter.ImportDriverFingerprintCsvFile(runtimeData, csvPath, true);
+    }
+
+    public static void ImportDriverDenyListCsv(RuntimeData runtimeData, EditorWindow? editorWindow)
+    {
+        var csvPath = SelectCsvFile(runtimeData, editorWindow, "Open a driver deny list CSV file");
+        if (string.IsNullOrEmpty(csvPath)) return;
+        DriverFingerprintCsvImporter.ImportDriverFingerprintCsvFile(runtimeData, csvPath, false);
+    }
+    
     public static void ImportGpuAllowListCsv(RuntimeData runtimeData, EditorWindow? editorWindow)
     {
         var csvPath = SelectCsvFile(runtimeData, editorWindow, "Open a GPU allow list CSV file");
