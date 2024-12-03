@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+#include "vkquality.h"
 #include "vkquality_prediction_file.h"
 #include "vkquality_matching.h"
 #include <ctype.h>
@@ -86,6 +87,22 @@ VkQualityPredictionFile::FileParseResult VkQualityPredictionFile::ValidateFile(
     return kFileParseResult_Error_DeviceListOverflow;
   }
 
+  const size_t driver_allow_list_size = header->driver_allow_count *
+      sizeof(VkQualityDriverFingerprintEntry);
+  const size_t driver_allow_list_end = header->driver_allow_offset + driver_allow_list_size;
+  if (driver_allow_list_end > file_size) {
+    file_parse_error_ = "Invalid file: driver allow list overflows end of file";
+    return kFileParseResult_Error_DriverAllowOverflow;
+  }
+
+  const size_t driver_deny_list_size = header->driver_deny_count *
+      sizeof(VkQualityDriverFingerprintEntry);
+  const size_t driver_deny_list_end = header->driver_deny_offset + driver_deny_list_size;
+  if (driver_deny_list_end > file_size) {
+    file_parse_error_ = "Invalid file: driver deny list overflows end of file";
+    return kFileParseResult_Error_DriverDenyOverflow;
+  }
+
   const size_t gpu_allow_list_size = header->gpu_allow_predict_count *
                                      sizeof(VkQualityGpuPredictEntry);
   const size_t gpu_allow_list_end = header->gpu_allow_predict_offset + gpu_allow_list_size;
@@ -100,6 +117,22 @@ VkQualityPredictionFile::FileParseResult VkQualityPredictionFile::ValidateFile(
   if (gpu_deny_list_end > file_size) {
     file_parse_error_ = "Invalid file: GPU deny list overflows end of file";
     return kFileParseResult_Error_GpuDenyOverflow;
+  }
+
+  const size_t soc_allow_list_size = header->soc_allow_count *
+      sizeof(VkQualityDriverSoCEntry);
+  const size_t soc_allow_list_end = header->soc_allow_offset + soc_allow_list_size;
+  if (soc_allow_list_end > file_size) {
+    file_parse_error_ = "Invalid file: SoC allow list overflows end of file";
+    return kFileParseResult_Error_SoCAllowOverflow;
+  }
+
+  const size_t soc_deny_list_size = header->soc_deny_count *
+      sizeof(VkQualityDriverSoCEntry);
+  const size_t soc_deny_list_end = header->soc_deny_offset + soc_deny_list_size;
+  if (soc_deny_list_end > file_size) {
+    file_parse_error_ = "Invalid file: soc deny list overflows end of file";
+    return kFileParseResult_Error_SoCDenyOverflow;
   }
 
   // Individual string offset bounds checks are made at string retrieval time, we just make
@@ -147,19 +180,35 @@ VkQualityPredictionFile::FileParseResult VkQualityPredictionFile::ParseFileData(
       (file_start + file_header_->device_list_shortcuts_offset));
   device_table_ = reinterpret_cast<const VkQualityDeviceAllowListEntry *>(
       (file_start + file_header_->device_list_offset));
+  driver_allow_table_ = reinterpret_cast<const VkQualityDriverFingerprintEntry *>(
+      (file_start + file_header_->driver_allow_offset));
+  driver_deny_table_ = reinterpret_cast<const VkQualityDriverFingerprintEntry *>((
+      file_start + file_header_->driver_deny_offset));
   gpu_allow_table_ = reinterpret_cast<const VkQualityGpuPredictEntry *>(
       (file_start + file_header_->gpu_allow_predict_offset));
   gpu_deny_table_ = reinterpret_cast<const VkQualityGpuPredictEntry *>((
       file_start + file_header_->gpu_deny_predict_offset));
+  soc_allow_table_ = reinterpret_cast<const VkQualityDriverSoCEntry *>(
+      (file_start + file_header_->soc_allow_offset));
+  soc_deny_table_ = reinterpret_cast<const VkQualityDriverSoCEntry *>((
+      file_start + file_header_->soc_deny_offset));
 
   return result;
 }
 
 VkQualityPredictionFile::FileMatchResult VkQualityPredictionFile::FindDeviceMatch(
-    const DeviceInfo &device_info) {
+    const DeviceInfo &device_info, const int32_t flags) {
 
-  // First search for an explicit device match in the device list
-  FileMatchResult result = SearchDeviceList(device_info);
+  // Search for a prediction from the SoC/fingerprint list
+  FileMatchResult result = kFileMatch_None;
+  if ((flags & kInitFlagSkipFingerprintRecommendationCheck) == 0) {
+      result = SearchDriverLists(device_info);
+      if (result != kFileMatch_None) {
+          return result;
+      }
+  }
+  // Next search for an explicit device match in the device list
+  result = SearchDeviceList(device_info);
   if (result == kFileMatch_None) {
     // If there was no device match, look for a GPU allow or deny prediction match
     result = SearchGpuLists(device_info);
@@ -194,6 +243,65 @@ VkQualityPredictionFile::FileMatchResult VkQualityPredictionFile::SearchDeviceLi
       return result;
     }
   }
+  return kFileMatch_None;
+}
+
+VkQualityPredictionFile::FileMatchResult VkQualityPredictionFile::SearchDriverLists(
+    const DeviceInfo &device_info) {
+  FileMatchResult result = SearchDriverList(device_info, kFileMatch_DriverAllow);
+  if (result == kFileMatch_None) {
+    result = SearchDriverList(device_info, kFileMatch_DriverDeny);
+  }
+  return result;
+}
+
+VkQualityPredictionFile::FileMatchResult VkQualityPredictionFile::SearchDriverList(
+    const DeviceInfo &device_info, const FileMatchResult match_result) {
+  if (device_info.soc.empty()) {
+    // SoC check requires Android API >= 31, string will be empty on
+    // earlier versions of Android
+    return kFileMatch_None;
+  }
+
+  // Linear search at the moment for simplicity and small list sizes, the
+  // data for SoC strings and driver fingerprint strings should be alphabetically
+  // sorted in a manner compatible with performing a binary search for a future
+  // optimization
+  uint32_t driver_count;
+  uint32_t soc_count;
+  const VkQualityDriverFingerprintEntry *driver_table;
+  const VkQualityDriverSoCEntry *soc_table;
+  if (match_result == kFileMatch_DriverAllow) {
+    driver_count = file_header_->driver_allow_count;
+    driver_table = driver_allow_table_;
+    soc_count = file_header_->soc_allow_count;
+    soc_table = soc_allow_table_;
+  } else if (match_result == kFileMatch_DriverDeny) {
+    driver_count = file_header_->driver_deny_count;
+    driver_table = driver_deny_table_;
+    soc_count = file_header_->soc_deny_count;
+    soc_table = soc_deny_table_;
+  } else {
+    return kFileMatch_None;
+  }
+
+  for (uint32_t soc_index = 0; soc_index < soc_count; ++soc_index) {
+    const char *soc_string = GetString(soc_table[soc_index].soc_string_index);
+    if (strcasecmp(soc_string, device_info.soc.c_str()) == 0) {
+      const uint32_t fingerprint_offset = soc_table[soc_index].soc_fingerprint_offset;
+      const uint32_t fingerprint_count = soc_table[soc_index].soc_fingerprint_count;
+      for (uint32_t driver_index = fingerprint_offset;
+          driver_index < (fingerprint_offset + fingerprint_count); ++driver_index) {
+        const char *fingerprint_string =
+            GetString(driver_table[driver_index].driver_version_string_index);
+        if (strcmp(fingerprint_string, device_info.gles_version.c_str()) == 0) {
+          return match_result;
+        }
+      }
+      return kFileMatch_None;
+    }
+  }
+
   return kFileMatch_None;
 }
 

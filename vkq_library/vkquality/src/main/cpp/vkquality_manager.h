@@ -48,14 +48,15 @@ class VkQualityManager {
 
  public:
   VkQualityManager(JNIEnv *env, AAssetManager *asset_manager,
-                   const char *storage_path, const char *asset_filename,
+                   const char *storage_path, const char *asset_filename, int32_t flags,
                    ConstructorTag);
 
   ~VkQualityManager() = default;
 
   static vkQualityInitResult Init(JNIEnv *env, AAssetManager *asset_manager,
                                   const char *storage_path,
-                                  const char *asset_filename);
+                                  const char *asset_filename,
+                                  int32_t flags);
 
   static void DestroyInstance(JNIEnv *env);
 
@@ -90,7 +91,8 @@ class VkQualityManager {
   std::string asset_filename_;
   std::string storage_path_;
 
-  int cache_list_version_ = -1;
+  int32_t cache_list_version_ = -1;
+  int32_t flags_ = 0;
 
   VkQualityPredictionFile prediction_file_;
 

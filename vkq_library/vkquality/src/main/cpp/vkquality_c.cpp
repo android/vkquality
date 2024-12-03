@@ -21,7 +21,7 @@
 extern "C" {
 
 #define VKQUALITY_MAJOR_VERSION 1
-#define VKQUALITY_MINOR_VERSION 1
+#define VKQUALITY_MINOR_VERSION 2
 #define VKQUALITY_BUGFIX_VERSION 0
 
 #define VKQUALITY_GENERATE_PACKED_VERSION(MAJOR, MINOR, BUGFIX) \
@@ -51,7 +51,15 @@ uint32_t VkQuality_getVersion() {
 vkQualityInitResult vkQuality_initialize(JNIEnv *env, AAssetManager *asset_manager,
                                          const char *storage_path,
                                          const char *asset_filename) {
-  return vkquality::VkQualityManager::Init(env, asset_manager, storage_path, asset_filename);
+  return vkquality::VkQualityManager::Init(env, asset_manager, storage_path, asset_filename, 0);
+}
+
+vkQualityInitResult vkQuality_initializeFlags(JNIEnv *env, AAssetManager *asset_manager,
+                                         const char *storage_path,
+                                         const char *asset_filename,
+                                         int32_t flags) {
+    return vkquality::VkQualityManager::Init(env, asset_manager, storage_path, asset_filename,
+                                             flags);
 }
 
 void vkQuality_destroy(JNIEnv *env) {
@@ -63,9 +71,9 @@ vkQualityRecommendation vkQuality_getRecommendation() {
 }
 
 JNIEXPORT jint JNICALL
-Java_com_google_android_games_vkquality_VKQuality_startVkQuality(
+Java_com_google_android_games_vkquality_VKQuality_startVkQualityFlags(
     JNIEnv *env, jobject activity, jobject jasset_manager,
-    jstring jstorage_path, jstring jdata_filename) {
+    jstring jstorage_path, jstring jdata_filename, jint flags) {
 
   auto path_cstr = env->GetStringUTFChars(jstorage_path, nullptr);
   auto path_length = env->GetStringUTFLength(jstorage_path);
@@ -79,7 +87,18 @@ Java_com_google_android_games_vkquality_VKQuality_startVkQuality(
 
   AAssetManager *asset_manager = AAssetManager_fromJava(env, jasset_manager);
 
-  return vkQuality_initialize(env, asset_manager, storage_path.c_str(), data_filename.c_str());
+  return vkQuality_initializeFlags(env, asset_manager, storage_path.c_str(), data_filename.c_str(),
+                              flags);
+}
+
+JNIEXPORT jint JNICALL
+Java_com_google_android_games_vkquality_VKQuality_startVkQuality(
+        JNIEnv *env, jobject activity, jobject jasset_manager,
+        jstring jstorage_path, jstring jdata_filename) {
+    return Java_com_google_android_games_vkquality_VKQuality_startVkQualityFlags(env, activity,
+                                                                                 jasset_manager,
+                                                                                 jstorage_path,
+                                                                                 jdata_filename, 0);
 }
 
 JNIEXPORT jint JNICALL
@@ -100,5 +119,6 @@ void VKQUALITY_VERSION_SYMBOL() {
   // In case of mismatch, a linker error will be triggered because of an
   // undefined symbol, as the name of the function depends on the version.
 }
+
 
 } // extern "C"

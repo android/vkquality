@@ -59,7 +59,7 @@ VkQualityPredictionFile::FileMatchResult VkQualityMatching::CheckDeviceMatch(
   bool version_too_old = false;
 
   // Must at least have a brand string
-  if (brand.length() == 0) {
+  if (brand.empty()) {
     return VkQualityPredictionFile::kFileMatch_None;
   }
 
@@ -71,7 +71,7 @@ VkQualityPredictionFile::FileMatchResult VkQualityMatching::CheckDeviceMatch(
     version_too_old = true;
   }
 
-  if (device.length() == 0) {
+  if (device.empty()) {
     std::string_view brand_view(device_info.brand);
     if (brand_view == brand && !version_too_old) {
       return VkQualityPredictionFile::kFileMatch_BrandWildcard;
@@ -101,7 +101,7 @@ VkQualityPredictionFile::FileMatchResult VkQualityMatching::CheckGpuMatch(
     const VkQualityPredictionFile::FileMatchResult match_result) {
 
   // Require a device name string, or an explicit device/vendor id combo
-  if ((device_id == 0 || vendor_id == 0) && device.length() == 0) {
+  if ((device_id == 0 || vendor_id == 0) && device.empty()) {
     return VkQualityPredictionFile::kFileMatch_None;
   }
 

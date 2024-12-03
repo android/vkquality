@@ -49,6 +49,7 @@ add_library(vkq OBJECT ${VKQ_SRCS})
 # used in the AndroidManifest.xml file.
 add_library(${CMAKE_PROJECT_NAME} SHARED
         $<TARGET_OBJECTS:vkq>
+        gles_util.cpp
         vkquality_c.cpp
         vkquality_manager.cpp
         vulkan_util.cpp)
@@ -66,6 +67,8 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Os")
 target_link_libraries(${CMAKE_PROJECT_NAME}
         # List libraries link to the target library
         android
+        EGL
+        GLESv3
         log)
 
 add_library(vkq_tests SHARED vkquality_tests.cpp)

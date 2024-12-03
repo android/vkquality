@@ -14,29 +14,18 @@
  * limitations under the License.
  */
 
-#ifndef VKQUALITY_DEVICE_INFO_H_
-#define VKQUALITY_DEVICE_INFO_H_
+#ifndef VKQUALITY_GLES_UTIL_H_
+#define VKQUALITY_GLES_UTIL_H_
 
-#include <cstdint>
-#include <string>
+#include "vkquality_manager.h"
 
 namespace vkquality {
 
-static constexpr uint32_t kWildcardValue = 0;
-
-struct DeviceInfo {
-  std::string brand;
-  std::string device;
-  std::string soc;
-  std::string vk_device_name;
-  std::string gles_version;
-  int32_t api_level = kWildcardValue;
-  uint32_t vk_api_version = kWildcardValue;
-  uint32_t vk_device_id = kWildcardValue;
-  uint32_t vk_driver_version = kWildcardValue;
-  uint32_t vk_vendor_id = kWildcardValue;
+class GLESUtil {
+ public:
+  static std::string GetGLESVersionString();
 };
 
-}
+} // namespace vkquality
 
-#endif //VKQUALITYAAR_VKQUALITY_DEVICE_INFO_H
+#endif // VKQUALITY_GLES_UTIL_H_
