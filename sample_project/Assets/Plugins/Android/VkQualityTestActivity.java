@@ -64,6 +64,9 @@ public class VkQualityTestActivity extends UnityPlayerActivity {
         // VkQuality INIT_FLAG_GLES_ONLY_STARTUP_MITIGATION_DEVICES = 2
         //   If set, this will only return GLES and never Vulkan for
         //   devices affected by the startup crash mitigation path
+		// VkQuality INIT_FLAG_SKIP_DRIVER_FINGERPRINT_CHECK = 4
+		//   If set, this will disable a check that uses a list
+		//   of SoC/driver fingerprint pairs to predict Vulkan quality
         int startResult = vkQuality.StartVkQualityWithFlags("", 0);
         if (startResult == VKQuality.INIT_SUCCESS) {
             // In the current release, we can assume GetVkQuality is

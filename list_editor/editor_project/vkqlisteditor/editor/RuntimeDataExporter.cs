@@ -20,19 +20,23 @@ namespace vkqlisteditor.editor;
 
 public static class RuntimeDataExporter
 {
-    private const int FileHeaderSizeBytes = (14 * 4);
+    private const int FileHeaderSizeBytes = (22 * 4);
     private const int ShortcutTableSizeBytes = (27 * 4);
     private const uint FileIdentifier = 0x564b5141;
-    private const uint FileFormatVersion = 0x010000;
-    private const uint MinimumLibraryVersion = 0x010000;
+    private const uint FileFormatVersion = 0x010200;
+    private const uint MinimumLibraryVersion = 0x010200;
 
     private struct RuntimeFileSizes
     {
         public int HeaderSize = 0;
         public int DeviceListSize = 0;
+        public int DriverAllowListSize = 0;
+        public int DriverDenyListSize = 0;
         public int GpuAllowListSize = 0;
         public int GpuDenyListSize = 0;
         public int ShortcutListSize = 0;
+        public int SocAllowListSize = 0;
+        public int SocDenyListSize = 0;
         public int StringTableSize = 0;
         public int TotalSize = 0;
 
@@ -47,14 +51,21 @@ public static class RuntimeDataExporter
 
         var stringTable = GenerateStringTable(runtimeData);
         var deviceTable = GenerateDeviceListExport(runtimeData);
+        var driverAllowTable = GenerateDriverFingerprintExport(runtimeData.DriverAllowList);
+        var driverDenyTable = GenerateDriverFingerprintExport(runtimeData.DriverDenyList);
         var gpuAllowTable = GenerateGpuListExport(runtimeData.GpuPredictAllowList);
         var gpuDenyTable = GenerateGpuListExport(runtimeData.GpuPredictDenyList);
 
         RuntimeFileSizes fileSizes = default;
-        CalculateFileSizes(deviceTable, gpuAllowTable, gpuDenyTable, stringTable, ref fileSizes);
+        CalculateFileSizes(deviceTable, driverAllowTable, driverDenyTable, gpuAllowTable,
+            gpuDenyTable, stringTable, ref fileSizes);
 
         uint gpuAllowListOffset = 0;
         uint gpuDenyListOffset = 0;
+        uint driverAllowListOffset = 0;
+        uint driverDenyListOffset = 0;
+        uint socAllowListOffset = 0;
+        uint socDenyListOffset = 0;
 
         byte[] fileBuffer = new byte[fileSizes.TotalSize];
         Span<byte> fileSpan = fileBuffer;
@@ -90,8 +101,32 @@ public static class RuntimeDataExporter
             var gpuDenyTableSpan = fileSpan.Slice(currentBufferOffset, fileSizes.GpuDenyListSize);
             gpuDenyTable.ExportDeviceTable(gpuDenyTableSpan, stringTable);
             gpuDenyListOffset = (uint) currentBufferOffset;
+            currentBufferOffset += fileSizes.GpuDenyListSize;
         }
 
+        if (driverAllowTable.GetFingerprintTableCount() > 0 && driverAllowTable.GetSocTableCount() > 0)
+        {
+            var socAllowTableSpan = fileSpan.Slice(currentBufferOffset, fileSizes.SocAllowListSize);
+            driverAllowTable.ExportSocTable(socAllowTableSpan, stringTable);
+            socAllowListOffset = (uint) currentBufferOffset;
+            currentBufferOffset += fileSizes.SocAllowListSize;
+            var driverAllowTableSpan = fileSpan.Slice(currentBufferOffset, fileSizes.DriverAllowListSize);
+            driverAllowTable.ExportFingerprintTable(driverAllowTableSpan, stringTable);
+            driverAllowListOffset = (uint) currentBufferOffset;
+            currentBufferOffset += fileSizes.DriverAllowListSize;
+        }
+
+        if (driverDenyTable.GetFingerprintTableCount() > 0 && driverDenyTable.GetSocTableCount() > 0)
+        {
+            var socDenyTableSpan = fileSpan.Slice(currentBufferOffset, fileSizes.SocDenyListSize);
+            driverDenyTable.ExportSocTable(socDenyTableSpan, stringTable);
+            socDenyListOffset = (uint) currentBufferOffset;
+            currentBufferOffset += fileSizes.SocDenyListSize;
+            var driverDenyTableSpan = fileSpan.Slice(currentBufferOffset, fileSizes.DriverDenyListSize);
+            driverDenyTable.ExportFingerprintTable(driverDenyTableSpan, stringTable);
+            driverDenyListOffset = (uint) currentBufferOffset;
+        }
+        
         // Populate header information
         // vkquality_file_format.h - VkQualityFileHeader
         fileHeader[0] = FileIdentifier; // file_identifier
@@ -100,14 +135,22 @@ public static class RuntimeDataExporter
         fileHeader[3] = (uint) runtimeData.MainProject.ExportedListFileVersion; // list_version
         fileHeader[4] = (uint) runtimeData.MainProject.MinApiForFutureRecommendation; // min_future_vulkan_recommendation_api
         fileHeader[5] = deviceTable.GetCount(); // device_list_count
-        fileHeader[6] = gpuAllowTable.GetCount(); // gpu_allow_predict_count
-        fileHeader[7] = gpuDenyTable.GetCount(); // gpu_deny_predict_count
-        fileHeader[8] = stringTable.GetCount(); // string_table_count
-        fileHeader[9] = stringTableOffset; // string_table_offset
-        fileHeader[10] = deviceListOffset; // device_list_offset
-        fileHeader[11] = deviceListShortcutsOffset; // device_list_shortcuts_offset
-        fileHeader[12] = gpuAllowListOffset; // gpu_allow_predict_offset
-        fileHeader[13] = gpuDenyListOffset; // gpu_deny_predict_offset
+        fileHeader[6] = driverAllowTable.GetFingerprintTableCount(); // driver_allow_count
+        fileHeader[7] = driverDenyTable.GetFingerprintTableCount(); // driver_deny_count
+        fileHeader[8] = gpuAllowTable.GetCount(); // gpu_allow_predict_count
+        fileHeader[9] = gpuDenyTable.GetCount(); // gpu_deny_predict_count
+        fileHeader[10] = driverAllowTable.GetSocTableCount(); // soc_allow_count
+        fileHeader[11] = driverDenyTable.GetSocTableCount(); // soc_deny_count
+        fileHeader[12] = stringTable.GetCount(); // string_table_count
+        fileHeader[13] = deviceListOffset; // device_list_offset
+        fileHeader[14] = deviceListShortcutsOffset; // device_list_shortcuts_offset
+        fileHeader[15] = driverAllowListOffset; // driver_allow_offset
+        fileHeader[16] = driverDenyListOffset; // driver_deny_offset
+        fileHeader[17] = gpuAllowListOffset; // gpu_allow_predict_offset
+        fileHeader[18] = gpuDenyListOffset; // gpu_deny_predict_offset
+        fileHeader[19] = socAllowListOffset; // soc_allow_offset
+        fileHeader[20] = socDenyListOffset; // soc_deny_offset
+        fileHeader[21] = stringTableOffset; // string_table_offset
         
         using var exportStream = new FileStream(exportPath, FileMode.Create);
         exportStream.Write(fileBuffer);
@@ -115,17 +158,24 @@ public static class RuntimeDataExporter
         return true;
     }
 
-    private static void CalculateFileSizes(DeviceListExport deviceTable,
+    private static void CalculateFileSizes(DeviceListExport deviceTable, DriverFingerprintExport driverAllowTable,
+        DriverFingerprintExport driverDenyTable,
         GpuListExport gpuAllowTable, GpuListExport gpuDenyTable, StringTable stringTable,
         ref RuntimeFileSizes fileSizes)
     {
         fileSizes.HeaderSize = FileHeaderSizeBytes;
         fileSizes.DeviceListSize = deviceTable.CalculateDeviceTableSize();
+        fileSizes.DriverAllowListSize = driverAllowTable.GetFingerprintTableSize();
+        fileSizes.DriverDenyListSize = driverDenyTable.GetFingerprintTableSize();
         fileSizes.GpuAllowListSize = gpuAllowTable.CalculateGpuTableSize();
         fileSizes.GpuDenyListSize = gpuDenyTable.CalculateGpuTableSize();
         fileSizes.ShortcutListSize = ShortcutTableSizeBytes;
+        fileSizes.SocAllowListSize = driverAllowTable.GetSocTableSize();
+        fileSizes.SocDenyListSize = driverDenyTable.GetSocTableSize();
         fileSizes.StringTableSize = stringTable.CalculateStringTableSize();
-        fileSizes.TotalSize = fileSizes.HeaderSize + fileSizes.DeviceListSize + fileSizes.GpuAllowListSize
+        fileSizes.TotalSize = fileSizes.HeaderSize + fileSizes.DeviceListSize + fileSizes.DriverAllowListSize
+                              + fileSizes.DriverDenyListSize + fileSizes.SocAllowListSize
+                              + fileSizes.SocDenyListSize + fileSizes.GpuAllowListSize
                               + fileSizes.GpuDenyListSize + fileSizes.ShortcutListSize 
                               + fileSizes.StringTableSize;
     }
@@ -150,6 +200,18 @@ public static class RuntimeDataExporter
             stringTable.AddStringToTable(gpuDenyEntry.DeviceName);
         }
 
+        foreach (var driverAllowEntry in runtimeData.DriverAllowList)
+        {
+            stringTable.AddStringToTable(driverAllowEntry.Soc);
+            stringTable.AddStringToTable(driverAllowEntry.DriverFingerprint);
+        }
+
+        foreach (var driverDenyEntry in runtimeData.DriverDenyList)
+        {
+            stringTable.AddStringToTable(driverDenyEntry.Soc);
+            stringTable.AddStringToTable(driverDenyEntry.DriverFingerprint);
+        }
+        
         return stringTable;
     }
 
@@ -163,6 +225,19 @@ public static class RuntimeDataExporter
         }
 
         return deviceListExport;
+    }
+
+    private static DriverFingerprintExport GenerateDriverFingerprintExport(
+        List<DriverFingerprintRecord> fingerprintRecords)
+    {
+        DriverFingerprintExport driverFingerprintExport = new();
+
+        foreach (var fingerprintRecord in fingerprintRecords)
+        {
+            driverFingerprintExport.AddDriverFingerprint(fingerprintRecord.Soc, fingerprintRecord.DriverFingerprint);
+        }
+        driverFingerprintExport.GenerateLists();
+        return driverFingerprintExport;
     }
 
     private static GpuListExport GenerateGpuListExport(List<GpuPredictRecord> gpuList)

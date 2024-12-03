@@ -34,8 +34,12 @@ public:
     kFileParseResult_Error_InvalidIdentifier,
     kFileParseResult_Error_LibraryTooOldForFile,
     kFileParseResult_Error_DeviceListOverflow,
+    kFileParseResult_Error_DriverAllowOverflow,
+    kFileParseResult_Error_DriverDenyOverflow,
     kFileParseResult_Error_GpuAllowOverflow,
     kFileParseResult_Error_GpuDenyOverflow,
+    kFileParseResult_Error_SoCAllowOverflow,
+    kFileParseResult_Error_SoCDenyOverflow,
     kFileParseResult_Error_StringOffsetOverflow,
     kFileParseResult_Error_ShortcutOverflow
   };
@@ -44,6 +48,8 @@ public:
     kFileMatch_ExactDevice = 0,
     kFileMatch_DeviceOldVersion,
     kFileMatch_BrandWildcard,
+    kFileMatch_DriverAllow,
+    kFileMatch_DriverDeny,
     kFileMatch_GpuAllow,
     kFileMatch_GpuDeny,
     kFileMatch_None
@@ -55,7 +61,7 @@ public:
   FileParseResult ParseFileData(void *file_data, const size_t file_size,
                                 const uint32_t library_version);
 
-  FileMatchResult FindDeviceMatch(const DeviceInfo &device_info);
+  FileMatchResult FindDeviceMatch(const DeviceInfo &device_info, const int32_t flags);
 
   uint32_t GetListVersion() const { return file_header_->list_version; }
 
@@ -72,6 +78,9 @@ private:
                                const uint32_t library_version);
 
   FileMatchResult SearchDeviceList(const DeviceInfo &device_info);
+  FileMatchResult SearchDriverLists(const DeviceInfo &device_info);
+  FileMatchResult SearchDriverList(const DeviceInfo &device_info,
+                                   const FileMatchResult match_result);
   FileMatchResult SearchGpuLists(const DeviceInfo &device_info);
   FileMatchResult SearchGpuList(const DeviceInfo &device_info, const FileMatchResult match_result);
 
@@ -80,8 +89,12 @@ private:
   const uint32_t *string_offset_table_ = nullptr;
   const uint32_t *device_shortcut_table_ = nullptr;
   const VkQualityDeviceAllowListEntry *device_table_ = nullptr;
+  const VkQualityDriverFingerprintEntry *driver_allow_table_ = nullptr;
+  const VkQualityDriverFingerprintEntry *driver_deny_table_ = nullptr;
   const VkQualityGpuPredictEntry *gpu_allow_table_ = nullptr;
   const VkQualityGpuPredictEntry *gpu_deny_table_ = nullptr;
+  const VkQualityDriverSoCEntry *soc_allow_table_ = nullptr;
+  const VkQualityDriverSoCEntry *soc_deny_table_ = nullptr;
   std::string file_parse_error_;
 };
 

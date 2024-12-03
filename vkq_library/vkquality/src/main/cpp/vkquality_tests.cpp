@@ -124,7 +124,7 @@ TEST(MemoryBufferTests, Validity)
 
 static constexpr uint32_t kDefaultMinAndroidApi = 34;
 
-static constexpr uint32_t kValidVersion = 0x10000;
+static constexpr uint32_t kValidVersion = 0x10200;
 
 static constexpr uint32_t kTestString_Empty = 0;
 static constexpr uint32_t kTestString_GpuFakeGoogle250 = 1;
@@ -135,9 +135,16 @@ static constexpr uint32_t kTestString_DevicePixel7 = 5;
 static constexpr uint32_t kTestString_BrandSuperfone = 6;
 static constexpr uint32_t kTestString_DeviceSuperfone9000 = 7;
 static constexpr uint32_t kTestString_GpuZMistake = 8;
-static constexpr uint32_t kTestString_Gpu9dfx = 9;
+static constexpr uint32_t kTestString_SoC123 = 9;
+static constexpr uint32_t kTestString_SoC456 = 10;
+static constexpr uint32_t kTestString_FingerprintAGood = 11;
+static constexpr uint32_t kTestString_FingerprintBGood = 12;
+static constexpr uint32_t kTestString_FingerprintCGood = 13;
+static constexpr uint32_t kTestString_FingerprintABad = 14;
+static constexpr uint32_t kTestString_FingerprintBBad = 15;
+static constexpr uint32_t kTestString_Gpu9dfx = 16;
 
-static constexpr uint32_t kTestStringTableCount = 10;
+static constexpr uint32_t kTestStringTableCount = 17;
 
 static constexpr const char *kTestStrings[kTestStringTableCount] = {
     "",
@@ -149,7 +156,14 @@ static constexpr const char *kTestStrings[kTestStringTableCount] = {
     "superfone",
     "superfone 9000",
     "zmistake XL",
-    "9dfx doovoo 500"
+    "zzSoC123",
+    "zzSoC456",
+    "zzzFingerprintAGood",
+    "zzzFingerprintBGood",
+    "zzzFingerprintCGood",
+    "zzzFingerprintABad",
+    "zzzFingerprintBBad",
+    "9dfx doovoo 500",
 };
 
 static constexpr VkQualityFileHeader kGoodHeaderTemplate {
@@ -158,6 +172,10 @@ static constexpr VkQualityFileHeader kGoodHeaderTemplate {
     kValidVersion,
     1,
     36,
+    0,
+    0,
+    0,
+    0,
     0,
     0,
     0,
@@ -220,6 +238,41 @@ static constexpr VkQualityGpuPredictEntry kDefaultGpuDenyList[kDefaultGpuDenyCou
     }
 };
 
+static constexpr size_t kDefaultSocAllowListCount = 2;
+static constexpr VkQualityDriverSoCEntry kDefaultSocAllowList[kDefaultSocAllowListCount] = {
+    {
+        2, 0, kTestString_SoC123
+    },
+    {
+        3, 2, kTestString_SoC456
+    }
+};
+
+static constexpr size_t kDefaultFingerprintAllowListCount = 4;
+static constexpr VkQualityDriverFingerprintEntry kDefaultFingerprintAllowList[kDefaultFingerprintAllowListCount] = {
+    { kTestString_FingerprintAGood },
+    { kTestString_FingerprintBGood },
+    { kTestString_FingerprintAGood },
+    { kTestString_FingerprintCGood }
+};
+
+static constexpr size_t kDefaultSocDenyListCount = 2;
+static constexpr VkQualityDriverSoCEntry kDefaultSocDenyList[kDefaultSocDenyListCount] = {
+    {
+        1, 0, kTestString_SoC123
+    },
+    {
+        2, 1, kTestString_SoC456
+    }
+};
+
+static constexpr size_t kDefaultFingerprintDenyListCount = 3;
+static constexpr VkQualityDriverFingerprintEntry kDefaultFingerprintDenyList[kDefaultFingerprintDenyListCount] = {
+    { kTestString_FingerprintABad },
+    { kTestString_FingerprintABad },
+    { kTestString_FingerprintBBad }
+};
+
 // Make sure NotEmpty works
 TEST(VkQualityTestNE, NotEmpty) {
 EXPECT_NE(sizeof(VkQualityFileHeader), 0);
@@ -230,7 +283,7 @@ EXPECT_NE(sizeof(VkQualityFileHeader), 0);
 TEST(VkQualityTestValidity, Validity)
 {
 const size_t fh_size = sizeof(VkQualityFileHeader);
-EXPECT_EQ(fh_size, 56);
+EXPECT_EQ(fh_size, 88);
 EXPECT_NE(fh_size, 0);
 }
 
@@ -296,20 +349,40 @@ static void ConstructValidFile(MemoryBuffer &memory_buffer) {
   uint8_t *base = reinterpret_cast<uint8_t *>(memory_buffer.GetPtr());
   VkQualityFileHeader *header = reinterpret_cast<VkQualityFileHeader*>(base);
   header->device_list_count = kDefaultDeviceListCount;
+  header->driver_allow_count = kDefaultFingerprintAllowListCount;
+  header->driver_deny_count = kDefaultFingerprintDenyListCount;
   header->gpu_allow_predict_count = kDefaultGpuAllowCount;
   header->gpu_deny_predict_count = kDefaultGpuDenyCount;
+  header->soc_allow_count = kDefaultSocAllowListCount;
+  header->soc_deny_count = kDefaultSocDenyListCount;
   header->string_table_count = kTestStringTableCount;
 
   header->device_list_shortcuts_offset = 0x7FFFFFFF;
   header->device_list_offset = 0x7FFFFFFF;
+  header->driver_allow_offset = 0x7FFFFFFF;
+  header->driver_deny_offset = 0x7FFFFFFF;
   header->gpu_allow_predict_offset = 0x7FFFFFFF;
   header->gpu_deny_predict_offset = 0x7FFFFFFF;
+  header->soc_allow_offset = 0x7FFFFFFF;
+  header->soc_deny_offset = 0x7FFFFFFF;
   header->string_table_offset = 0x7FFFFFFF;
 
   size_t device_list_offset = PUSH_BUFFER(kDefaultDeviceList);
   header->device_list_offset = static_cast<uint32_t>(device_list_offset);
   size_t device_list_size = memory_buffer.GetUsedSize() - device_list_offset;
   EXPECT_EQ(device_list_size, header->device_list_count * sizeof(VkQualityDeviceAllowListEntry));
+
+  size_t driver_allow_list_offset = PUSH_BUFFER(kDefaultFingerprintAllowList);
+  header->driver_allow_offset = static_cast<uint32_t>(driver_allow_list_offset);
+  size_t driver_allow_list_size = memory_buffer.GetUsedSize() - driver_allow_list_offset;
+  EXPECT_EQ(driver_allow_list_size, header->driver_allow_count *
+        sizeof(VkQualityDriverFingerprintEntry));
+
+  size_t driver_deny_list_offset = PUSH_BUFFER(kDefaultFingerprintDenyList);
+  header->driver_deny_offset = static_cast<uint32_t>(driver_deny_list_offset);
+  size_t driver_deny_list_size = memory_buffer.GetUsedSize() - driver_deny_list_offset;
+  EXPECT_EQ(driver_deny_list_size, header->driver_deny_count *
+                                  sizeof(VkQualityDriverFingerprintEntry));
 
   size_t gpu_allow_offset = PUSH_BUFFER(kDefaultGpuAllowList);
   header->gpu_allow_predict_offset = static_cast<uint32_t>(gpu_allow_offset);
@@ -320,6 +393,18 @@ static void ConstructValidFile(MemoryBuffer &memory_buffer) {
   header->gpu_deny_predict_offset = static_cast<uint32_t>(gpu_deny_offset);
   size_t deny_list_size = memory_buffer.GetUsedSize() - gpu_deny_offset;
   EXPECT_EQ(deny_list_size, header->gpu_deny_predict_count * sizeof(VkQualityGpuPredictEntry));
+
+  size_t soc_allow_list_offset = PUSH_BUFFER(kDefaultSocAllowList);
+  header->soc_allow_offset = static_cast<uint32_t>(soc_allow_list_offset);
+  size_t soc_allow_list_size = memory_buffer.GetUsedSize() - soc_allow_list_offset;
+  EXPECT_EQ(soc_allow_list_size, header->soc_allow_count *
+                                  sizeof(VkQualityDriverSoCEntry));
+
+  size_t soc_deny_list_offset = PUSH_BUFFER(kDefaultSocDenyList);
+  header->soc_deny_offset = static_cast<uint32_t>(soc_deny_list_offset);
+  size_t soc_deny_list_size = memory_buffer.GetUsedSize() - soc_deny_list_offset;
+  EXPECT_EQ(soc_deny_list_size, header->soc_deny_count *
+                                   sizeof(VkQualityDriverSoCEntry));
 
   const size_t string_offset_size = sizeof(uint32_t) * header->string_table_count;
   const size_t strings_offset = PUSH_ZERO(string_offset_size);
@@ -373,6 +458,20 @@ TEST(VkQualityFileParseHeaderOffsetCounts, Validity)
   EXPECT_EQ(result, VkQualityPredictionFile::kFileParseResult_Error_DeviceListOverflow);
   header->device_list_count = old_count;
 
+  old_count = header->driver_allow_count;
+  header->driver_allow_count = 0x7FFFFFFF;
+  result = file.ParseFileData(memory_buffer.GetPtr(), memory_buffer.GetUsedSize(),
+                              kValidVersion);
+  EXPECT_EQ(result, VkQualityPredictionFile::kFileParseResult_Error_DriverAllowOverflow);
+  header->driver_allow_count = old_count;
+
+  old_count = header->driver_deny_count;
+  header->driver_deny_count = 0x7FFFFFFF;
+  result = file.ParseFileData(memory_buffer.GetPtr(), memory_buffer.GetUsedSize(),
+                              kValidVersion);
+  EXPECT_EQ(result, VkQualityPredictionFile::kFileParseResult_Error_DriverDenyOverflow);
+  header->driver_deny_count = old_count;
+
   old_count = header->gpu_allow_predict_count;
   header->gpu_allow_predict_count = 0x7FFFFFFF;
   result = file.ParseFileData(memory_buffer.GetPtr(), memory_buffer.GetUsedSize(),
@@ -386,6 +485,20 @@ TEST(VkQualityFileParseHeaderOffsetCounts, Validity)
                               kValidVersion);
   EXPECT_EQ(result, VkQualityPredictionFile::kFileParseResult_Error_GpuDenyOverflow);
   header->gpu_deny_predict_count = old_count;
+
+  old_count = header->soc_allow_count;
+  header->soc_allow_count = 0x7FFFFFFF;
+  result = file.ParseFileData(memory_buffer.GetPtr(), memory_buffer.GetUsedSize(),
+                              kValidVersion);
+  EXPECT_EQ(result, VkQualityPredictionFile::kFileParseResult_Error_SoCAllowOverflow);
+  header->soc_allow_count = old_count;
+
+  old_count = header->soc_deny_count;
+  header->soc_deny_count = 0x7FFFFFFF;
+  result = file.ParseFileData(memory_buffer.GetPtr(), memory_buffer.GetUsedSize(),
+                              kValidVersion);
+  EXPECT_EQ(result, VkQualityPredictionFile::kFileParseResult_Error_SoCDenyOverflow);
+  header->soc_deny_count = old_count;
 
   old_count = header->string_table_count;
   header->string_table_count = 0x7FFFFFFF;
@@ -452,7 +565,9 @@ TEST(VkQualityDeviceMatchTests, Validity)
   DeviceInfo device_info {
     "moogle",
     "nixel 5",
+    "genericsoc",
     "mobilegpu a8",
+    "genericfingerprint",
     30,
     VK_API_VERSION_1_1,
     0x3330000,
@@ -529,7 +644,9 @@ TEST(VkQualityGpuTests, Validity)
   DeviceInfo device_info {
       "moogle",
       "nixel 5",
+      "genericdoc",
       "mobilegpu a8",
+      "genericfingerprint",
       30,
       VK_API_VERSION_1_1,
       0x3330000,
@@ -670,7 +787,9 @@ TEST(VkQualityRecommendationTests, Validity) {
   DeviceInfo device_info {
       "google",
       "pixel3.14",
+      "genericsoc",
       "gGPU",
+      "genericfingerprint",
       kDefaultMinAndroidApi,
       VK_API_VERSION_1_3,
       0x111,
@@ -686,75 +805,129 @@ TEST(VkQualityRecommendationTests, Validity) {
                                          kValidVersion);
   EXPECT_EQ(parse_result, VkQualityPredictionFile::kFileParseResult_Success);
 
-  auto recommendation = file.FindDeviceMatch(device_info);
+  auto recommendation = file.FindDeviceMatch(device_info, 0);
   EXPECT_EQ(recommendation, VkQualityPredictionFile::kFileMatch_ExactDevice);
 
   device_info.vk_driver_version -= 1;
-  recommendation = file.FindDeviceMatch(device_info);
+  recommendation = file.FindDeviceMatch(device_info, 0);
   EXPECT_EQ(recommendation, VkQualityPredictionFile::kFileMatch_DeviceOldVersion);
 
   device_info.vk_driver_version = kFakeGpuVendor_Google_MinDriverVersion;
   device_info.api_level -= 1;
-  recommendation = file.FindDeviceMatch(device_info);
+  recommendation = file.FindDeviceMatch(device_info, 0);
   EXPECT_EQ(recommendation, VkQualityPredictionFile::kFileMatch_DeviceOldVersion);
 
   // Brand wildcard matching
   DeviceInfo device_info_brand {
       "google",
       "",
+      "genericsoc",
       "gGPU",
+      "genericfingerprint",
       kDefaultMinAndroidApi + 1,
       VK_API_VERSION_1_3,
       0x111,
       kFakeGpuVendor_Google_MinDriverVersion,
       kFakeGpuVendorId_Google
   };
-  recommendation = file.FindDeviceMatch(device_info_brand);
+  recommendation = file.FindDeviceMatch(device_info_brand, 0);
   EXPECT_EQ(recommendation, VkQualityPredictionFile::kFileMatch_BrandWildcard);
 
   // GPU allow matchine
   DeviceInfo device_info_gpu_allow {
       "fakebrand",
       "fakefone",
+      "genericsoc",
       "9dfx doovoo 500",
+      "genericfingerprint",
       kDefaultMinAndroidApi,
       VK_API_VERSION_1_3,
       0x333,
       kFakeGpuVendor_9dfx_MinDriverVersion,
       kFakeGpuVendorId_9dfx
   };
-  recommendation = file.FindDeviceMatch(device_info_gpu_allow);
+  recommendation = file.FindDeviceMatch(device_info_gpu_allow, 0);
   EXPECT_EQ(recommendation, VkQualityPredictionFile::kFileMatch_GpuAllow);
 
   device_info_gpu_allow.vk_driver_version -= 1;
-  recommendation = file.FindDeviceMatch(device_info_gpu_allow);
+  recommendation = file.FindDeviceMatch(device_info_gpu_allow, 0);
   EXPECT_EQ(recommendation, VkQualityPredictionFile::kFileMatch_None);
 
   device_info_gpu_allow.vk_driver_version = kFakeGpuVendor_Google_MinDriverVersion;
   device_info_gpu_allow.api_level -= 1;
-  recommendation = file.FindDeviceMatch(device_info_gpu_allow);
+  recommendation = file.FindDeviceMatch(device_info_gpu_allow, 0);
   EXPECT_EQ(recommendation, VkQualityPredictionFile::kFileMatch_None);
 
   // GPU deny matchine
   DeviceInfo device_info_gpu_deny {
       "notrealbrand",
       "notrealfone",
+      "genericsoc",
       "zmistake XL",
+      "genericfingerprint",
       kDefaultMinAndroidApi,
       VK_API_VERSION_1_3,
       0x222,
       kFakeGpuVendor_ZMistake_MinDriverVersion,
       kFakeGpuVendorId_ZMistake
   };
-  recommendation = file.FindDeviceMatch(device_info_gpu_deny);
+  recommendation = file.FindDeviceMatch(device_info_gpu_deny, 0);
   EXPECT_EQ(recommendation, VkQualityPredictionFile::kFileMatch_GpuDeny);
 
   device_info_gpu_deny.vk_driver_version += 1;
-  recommendation = file.FindDeviceMatch(device_info_gpu_deny);
+  recommendation = file.FindDeviceMatch(device_info_gpu_deny, 0);
   EXPECT_EQ(recommendation, VkQualityPredictionFile::kFileMatch_None);
 
   device_info_gpu_deny.vk_driver_version = kFakeGpuVendor_Google_MinDriverVersion;
   device_info_gpu_deny.api_level += 1;
-  recommendation = file.FindDeviceMatch(device_info_gpu_deny);
+  recommendation = file.FindDeviceMatch(device_info_gpu_deny, 0);
   EXPECT_EQ(recommendation, VkQualityPredictionFile::kFileMatch_None);
+}
+
+TEST(VkQualityFingerprintTests, Validity) {
+  MemoryBuffer memory_buffer;
+  ConstructValidFile(memory_buffer);
+
+  VkQualityPredictionFile file;
+  const auto parse_result = file.ParseFileData(memory_buffer.GetPtr(), memory_buffer.GetUsedSize(),
+                                               kValidVersion);
+  EXPECT_EQ(parse_result, VkQualityPredictionFile::kFileParseResult_Success);
+
+  // Fingerprint allow matching
+  DeviceInfo fingerprint_allow {
+      "google",
+      "pixel3.14",
+      "zzSoC456",
+      "gGPU",
+      "zzzFingerprintCGood",
+      kDefaultMinAndroidApi,
+      VK_API_VERSION_1_3,
+      0x111,
+      kFakeGpuVendor_Google_MinDriverVersion,
+      kFakeGpuVendorId_Google
+  };
+
+  // Test fingerprint-skip flag, should match exact device instead
+  auto recommendation = file.FindDeviceMatch(fingerprint_allow,
+                                             kInitFlagSkipFingerprintRecommendationCheck);
+  EXPECT_EQ(recommendation, VkQualityPredictionFile::kFileMatch_ExactDevice);
+  recommendation = file.FindDeviceMatch(fingerprint_allow,0);
+  EXPECT_EQ(recommendation, VkQualityPredictionFile::kFileMatch_DriverAllow);
+
+  // Fingerprint deny matching
+  DeviceInfo fingerprint_deny {
+      "google",
+      "pixel3.14",
+      "zzSoC123",
+      "gGPU",
+      "zzzFingerprintABad",
+      kDefaultMinAndroidApi,
+      VK_API_VERSION_1_3,
+      0x111,
+      kFakeGpuVendor_Google_MinDriverVersion,
+      kFakeGpuVendorId_Google
+  };
+  recommendation = file.FindDeviceMatch(fingerprint_deny,0);
+  EXPECT_EQ(recommendation, VkQualityPredictionFile::kFileMatch_DriverDeny);
+
 }

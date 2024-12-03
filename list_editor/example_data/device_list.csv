@@ -33,6 +33,10 @@ MinApi,MinDriver,Brand,Device,Manufacturer,Model Name,RAM (TotalMem),Form Factor
 34,0,google,cheetah,Google,Pixel 7 Pro,7784-7840MB,Phone,Google Tensor G2,Mali-G710 MP7,1080x2400,420,arm64-v8a,33;34,3.2,0,0.00%,0.00%,0.00%,0.00%
 34,0,google,tangorpro,Google,Pixel Tablet,7784-7840MB,Phone,Google Tensor G2,Mali-G710 MP7,1080x2400,420,arm64-v8a,33;34,3.2,0,0.00%,0.00%,0.00%,0.00%
 34,0,google,shiba,Google,Pixel 8,7972MB,Phone,Google Tensor G3,Mali-G715s MC10,1080x2400,420,arm64-v8a,34,3.2,0,0.00%,0.00%,0.00%,0.00%
+34,0,google,comet,Google,Pixel 9 Pro Fold,16308MB,Tablet,Google Tensor G4,7x ARM Mali G715 (940 MHz),2076x2152,390,arm64-v8a,35,3.2,0,0.00%,0.00%,0.00%,0.00%
+34,0,google,caiman,Google,Pixel 9 Pro,16308MB,Phone,Google Tensor G4,7x ARM Mali G715 (940 MHz),1280x2856,480,arm64-v8a,34;35,3.2,0,0.00%,0.00%,0.00%,0.00%
+34,0,google,tokay,Google,Pixel 9,12109MB,Phone,Google Tensor G4,7x ARM Mali G715 (940 MHz),1080x2424,420,arm64-v8a,34;35,3.2,0,0.00%,0.00%,0.00%,0.00%
+34,0,google,komodo,Google,Pixel 9 Pro XL,16308MB,Phone,Google Tensor G4,7x ARM Mali G715 (940 MHz),1344x2992,480,arm64-v8a,34;35,3.2,0,0.00%,0.00%,0.00%,0.00%
 34,2150531090,HONOR,HNBVL,Honor,HONOR Magic6 Pro,11824MB,Phone,QTI SM8650,Qualcomm Adreno 830 (903 MHz),1280x2800,560,arm64-v8a,34,3.2,0,0.00%,0.00%,0.00%,0.00%
 34,2150531090,HONOR,HNBVL-AN00,Honor,HONOR Magic6,16015MB,Phone,QTI SM8650,Qualcomm Adreno 830 (903 MHz),1264x2800,560,arm64-v8a,34,3.2,0,0.00%,0.00%,0.00%,0.00%
 33,2150252544,HONOR,HNFRI,Honor,HONOR Magic Vs,11850MB,Tablet,QTI SM8475,Qualcomm Adreno 730 (900 MHz),1984x2272,480,arm64-v8a;armeabi;armeabi-v7a,33,3.2,0,0.00%,0.00%,0.00%,0.00%

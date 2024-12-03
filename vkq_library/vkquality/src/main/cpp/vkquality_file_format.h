@@ -53,6 +53,22 @@ typedef struct __attribute__((packed)) VkQualityFileHeader {
    * at `device_list_offset` bytes from the beginning of this header.
    */
   uint32_t device_list_count;
+  /** @brief The number of driver fingerprint list entries present in the file. The
+   * driver allow list is a sequential array of
+   * `VkQualityDriverFingerprintEntry` structures starting
+   * at `driver_allow_offset` bytes from the beginning of this header.
+   * The driver fingerprint string table list is assumed to be alphabetically sorted
+   * within the subsection applicable to a given SoC,
+   */
+  uint32_t driver_allow_count;
+  /** @brief The number of driver deny list entries present in the file. The
+   * driver deny list is a sequential array of
+   * `VkQualityDriverFingerprintEntry` structures starting
+   * at `driver_deny_offset` bytes from the beginning of this header.
+   * The driver fingerprint string table list is assumed to be alphabetically sorted
+   * within the subsection applicable to a given SoC,
+   */
+  uint32_t driver_deny_count;
   /** @brief The number of gpu predict allow list entries present in the file. The
    * gpu predict allow list is a sequential array of
    * `VkQualityGpuPredictEntry` structures starting
@@ -65,15 +81,27 @@ typedef struct __attribute__((packed)) VkQualityFileHeader {
    * at `gpu_deny_predict_offset` bytes from the beginning of this header.
    */
   uint32_t gpu_deny_predict_count;
+  /** @brief The number of SoC allow list entries present in the file. The
+   * SoC allow list is a sequential array of
+   * `VkQualityDriverSoCEntry` structures starting
+   * at `soc_allow_offset` bytes from the beginning of this header.
+   * The driver list is assumed to be alphabetically sorted by SOC and by
+   * The SoC string table list is assumed to be alphabetically sorted.
+   */
+  uint32_t soc_allow_count;
+  /** @brief The number of SoC deny list entries present in the file. The
+   * SoC deny list is a sequential array of
+   * `VkQualityDriverSoCEntry` structures starting
+   * at `soc_deny_offset` bytes from the beginning of this header.
+   * The SoC string table list is assumed to be alphabetically sorted.
+   */
+  uint32_t soc_deny_count;
   /** @brief The number of strings in the string table located at
    * at `string_table_offset` bytes from the beginning of this header.
    * The string table starts with a `string_table_count` array of 32-bit offsets
    * from beginning of this header for each UTF-8 null-terminated C string in the string table.
    */
   uint32_t string_table_count;
-  /** @brief Offset in bytes from the beginning of the header to the start of the string table data
-   */
-  uint32_t string_table_offset;
   /** @brief Offset in bytes from the beginning of the header to the start of the device list
    * data
    */
@@ -85,13 +113,32 @@ typedef struct __attribute__((packed)) VkQualityFileHeader {
    */
   uint32_t device_list_shortcuts_offset;
   /** @brief Offset in bytes from the beginning of the header to the start of the gpu
+   * driver allow list data
+   */
+  uint32_t driver_allow_offset;
+  /** @brief Offset in bytes from the beginning of the header to the start of the gpu
+   * driver deny list data
+   */
+  uint32_t driver_deny_offset;
+  /** @brief Offset in bytes from the beginning of the header to the start of the gpu
    * predict allow list data
    */
   uint32_t gpu_allow_predict_offset;
   /** @brief Offset in bytes from the beginning of the header to the start of the gpu
-   * predict allow list data
+   * predict deny list data
    */
   uint32_t gpu_deny_predict_offset;
+  /** @brief Offset in bytes from the beginning of the header to the start of the soc
+   * allow list data
+   */
+  uint32_t soc_allow_offset;
+  /** @brief Offset in bytes from the beginning of the header to the start of the soc
+   * deny list data
+   */
+  uint32_t soc_deny_offset;
+  /** @brief Offset in bytes from the beginning of the header to the start of the string table data
+   */
+  uint32_t string_table_offset;
 } VkQualityFileHeader;
 
 /**
@@ -158,6 +205,36 @@ typedef struct __attribute__((packed)) VkQualityGpuPredictEntry {
    */
   uint32_t min_driver_version;
 } VkQualityGpuPredictEntry;
+
+/**
+ * @brief A structure that describes the data to match a GPU driver version/SoC pair
+ * for a Vulkan predict allowlist or denylist recommendation
+ */
+typedef struct __attribute__((packed)) VkQualityDriverSoCEntry {
+  /** @brief Count of the number of driver fingerprints for this SoC
+   * in the driver fingerprint table
+   */
+  uint32_t soc_fingerprint_count;
+  /** @brief Index into the driver fingerprint table of the first
+   * driver fingerprint for this SoC
+   */
+  uint32_t soc_fingerprint_offset;
+  /** @brief Index into the string table of the string containing the
+   * Build.SOC matching value for this device entry
+   */
+  uint32_t soc_string_index;
+} VkQualityDriverSoCEntry;
+
+/**
+ * @brief A structure that describes the data to match a GPU driver version/SoC pair
+ * for a Vulkan predict allowlist or denylist recommendation
+ */
+typedef struct __attribute__((packed)) VkQualityDriverFingerprintEntry {
+  /** @brief Index into the string table of the string containing the
+   * glFullVersion matching value for this device entry
+   */
+  uint32_t driver_version_string_index;
+} VkQualityDriverFingerprintEntry;
 
 } // namespace vkquality
 

@@ -23,8 +23,8 @@ using Terminal.Gui;
 
 public class EditorWindow : Window
 {
-	public const int CommandIndexChangeRevision = 3;
-	public const int CommandIndexChangeFutureAPI = 4;
+	public const int CommandIndexChangeRevision = 5;
+	public const int CommandIndexChangeFutureAPI = 6;
     public EditorWindow(RuntimeData runtimeData)
     {
         Title = "vkQuality Device List Editor";
@@ -33,6 +33,8 @@ public class EditorWindow : Window
         
         _commandStrings = new List<string>();
         _commandStrings.Add("View device allow list");
+        _commandStrings.Add("View driver finrgerprint allow list");
+        _commandStrings.Add("View driver fingerprint deny list");
         _commandStrings.Add("View GPU suggest allow list");
         _commandStrings.Add("View GPU suggest deny list");
         _commandStrings.Add("Change List revision number...");
@@ -184,6 +186,8 @@ public class EditorWindow : Window
 	    public enum ActiveDataSource
 	    {
 		    DataSourceDeviceList = 0,
+		    DataSourceDriverAllow,
+		    DataSourceDriverDeny,
 		    DataSourceGpuAllow,
 		    DataSourceGpuDeny,
 		    DataSourceCount
@@ -208,6 +212,12 @@ public class EditorWindow : Window
 				{
 					ActiveDataSource.DataSourceDeviceList => _runtimeData.DeviceAllowList.Count > 0
 						? _runtimeData.DeviceAllowList.Count
+						: 1,
+					ActiveDataSource.DataSourceDriverAllow => _runtimeData.DriverAllowList.Count > 0
+						? _runtimeData.DriverAllowList.Count
+						: 1,
+					ActiveDataSource.DataSourceDriverDeny => _runtimeData.DriverDenyList.Count > 0
+						? _runtimeData.DriverDenyList.Count
 						: 1,
 					ActiveDataSource.DataSourceGpuAllow => _runtimeData.GpuPredictAllowList.Count > 0
 						? _runtimeData.GpuPredictAllowList.Count
@@ -269,6 +279,28 @@ public class EditorWindow : Window
 						renderString = "";
 					}
 					break;
+				case ActiveDataSource.DataSourceDriverAllow:
+					if (item < _runtimeData.DriverAllowList.Count)
+					{
+						var driverl = _runtimeData.DriverAllowList[item];
+						renderString = $"{driverl.Soc},{driverl.DriverFingerprint}";
+					}
+					else
+					{
+						renderString = "";
+					}
+					break;
+				case ActiveDataSource.DataSourceDriverDeny:
+					if (item < _runtimeData.DriverDenyList.Count)
+					{
+						var driverl = _runtimeData.DriverDenyList[item];
+						renderString = $"{driverl.Soc},{driverl.DriverFingerprint}";
+					}
+					else
+					{
+						renderString = "";
+					}
+					break;
 				case ActiveDataSource.DataSourceGpuAllow:
 					if (item < _runtimeData.GpuPredictAllowList.Count)
 					{
@@ -300,6 +332,8 @@ public class EditorWindow : Window
 			return _activeDataSource switch
 			{
 				ActiveDataSource.DataSourceDeviceList => _runtimeData.DeviceAllowList,
+				ActiveDataSource.DataSourceDriverAllow => _runtimeData.DriverAllowList,
+				ActiveDataSource.DataSourceDriverDeny => _runtimeData.DriverDenyList,
 				ActiveDataSource.DataSourceGpuAllow => _runtimeData.GpuPredictAllowList,
 				ActiveDataSource.DataSourceGpuDeny => _runtimeData.GpuPredictDenyList,
 				_ => throw new ArgumentOutOfRangeException()

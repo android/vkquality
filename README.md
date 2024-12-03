@@ -13,6 +13,10 @@ unless you wish to build the library from source.
 
 ## Directories
 
+**[list_editor/](list_editor)** - A tool for generating the runtime quality
+data file. This is only useful for developers that wish to create custom
+list data files. Further information located in the subdirectory README.
+
 **[sample_project/](sample_project)** - A sample Unity engine project that uses
 the VkQuality plugin. You should download the plugin package from the Releases
 page, which includes this sample project with the required VkQuality .aar file
@@ -34,6 +38,9 @@ feedback will help refine the recommendation list.
 
 ## Version history
 
+* 1.2 - (12/03/2024) - Added additional quality signal source option, derived from
+pairs of SoC names and driver fingerprint strings. This signal check can be disabled
+using a new `INIT_FLAG_SKIP_DRIVER_FINGERPRINT_CHECK` flag.
 * 1.1 - (08/02/2024) - Added mitigation code to fix issues of certain OEM devices
 with certain SoCs on odler drivers crashing from VkQuality attempting to determine
 driver version. Added new `StartVkQualityWithFlags` call with flags to disable/change

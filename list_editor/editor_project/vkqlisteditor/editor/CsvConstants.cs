@@ -64,4 +64,7 @@ public static class CsvConstants
     public const string GpuName = "GpuName";
     public const string DeviceId = "DeviceID";
     public const string VendorId = "VendorID";
+
+    public const string FingerprintSOC = "soc";
+    public const string FingerprintGlFullVersion = "glFullVersion";
 }

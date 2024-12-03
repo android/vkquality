@@ -19,17 +19,17 @@ using CsvHelper;
 
 namespace vkqlisteditor.editor;
 
-public class GpuListCsvImporter
+public class DriverFingerprintCsvImporter
 {
-    public static void ImportGpuListCsvFile(RuntimeData runtimeData, string csvPath, bool allowList)
+    public static void ImportDriverFingerprintCsvFile(RuntimeData runtimeData, string csvPath, bool allowList)
     {
         if (allowList)
         {
-            runtimeData.GpuPredictAllowList.Clear();
+            runtimeData.DriverAllowList.Clear();
         }
         else
         {
-            runtimeData.GpuPredictDenyList.Clear();
+            runtimeData.DriverDenyList.Clear();
         }
 
         if (!File.Exists(csvPath)) return;
@@ -41,14 +41,10 @@ public class GpuListCsvImporter
             csv.ReadHeader();
             while (csv.Read())
             {
-                var brandString = csv.GetField(CsvConstants.Brand);
-                var gpuString = csv.GetField(CsvConstants.GpuName);
-                var minApi = csv.GetField<int>(CsvConstants.MinApi);
-                var minDriver = csv.GetField<uint>(CsvConstants.MinDriver);
-                var deviceId = csv.GetField<uint>(CsvConstants.DeviceId);
-                var vendorId = csv.GetField<uint>(CsvConstants.VendorId);
-                if (allowList) runtimeData.GpuPredictAllowList.Add(new GpuPredictRecord(brandString, gpuString, deviceId, vendorId, minApi, minDriver));
-                else runtimeData.GpuPredictDenyList.Add(new GpuPredictRecord(brandString, gpuString, deviceId, vendorId, minApi, minDriver));
+                var socString = csv.GetField(CsvConstants.FingerprintSOC);
+                var driverString = csv.GetField(CsvConstants.FingerprintGlFullVersion);
+                if (allowList) runtimeData.DriverAllowList.Add(new DriverFingerprintRecord(socString, driverString));
+                else runtimeData.DriverDenyList.Add(new DriverFingerprintRecord(socString, driverString));
             }
         }
     }

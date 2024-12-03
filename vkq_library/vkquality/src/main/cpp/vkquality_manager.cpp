@@ -25,6 +25,7 @@
 #include <android/log.h>
 
 #include "vkquality_manager.h"
+#include "gles_util.h"
 #include "vulkan_util.h"
 
 #define ALOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
@@ -36,17 +37,22 @@ namespace vkquality {
 // Recommendation cache filename
 constexpr const char *kCacheFilename = "vkqcache.bin";
 
+// Build.SOC_MODEL requires API 31 or higher
+constexpr const int kMinSoCAPI = 31;
+
 // Device info class and field name constants for Android
 constexpr const char *kAndroidBuildClass = "android/os/Build";
 constexpr const char *kBrandField = "BRAND";
 constexpr const char *kDeviceField = "DEVICE";
+constexpr const char *kSoCField = "SOC_MODEL";
 
 std::mutex VkQualityManager::instance_mutex_;
 std::unique_ptr<VkQualityManager> VkQualityManager::instance_ = nullptr;
 
 vkQualityInitResult VkQualityManager::Init(JNIEnv *env, AAssetManager *asset_manager,
                                            const char *storage_path,
-                                           const char *asset_filename) {
+                                           const char *asset_filename,
+                                           int32_t flags) {
   std::lock_guard<std::mutex> lock(instance_mutex_);
   if (instance_ != nullptr) {
     // Already initialized
@@ -54,7 +60,7 @@ vkQualityInitResult VkQualityManager::Init(JNIEnv *env, AAssetManager *asset_man
   }
 
   instance_ = std::make_unique<VkQualityManager>(env, asset_manager,
-                                                 storage_path, asset_filename,
+                                                 storage_path, asset_filename, flags,
                                                  ConstructorTag{});
   if (instance_ == nullptr) {
     return kErrorInitializationFailure;
@@ -81,12 +87,13 @@ vkQualityRecommendation VkQualityManager::GetQualityRecommendation() {
 }
 
 VkQualityManager::VkQualityManager(JNIEnv *env, AAssetManager *asset_manager,
-                                   const char *storage_path, const char *asset_filename,
+                                   const char *storage_path, const char *asset_filename, int32_t flags,
                                    ConstructorTag)
     :asset_manager_(asset_manager)
     ,env_(env)
     ,asset_filename_(asset_filename)
-    ,storage_path_() {
+    ,storage_path_()
+    ,flags_(flags) {
   //ALOGE("INIT PATHS %s %s", storage_path, asset_filename);
   if (storage_path != nullptr) {
     storage_path_ = storage_path;
@@ -131,6 +138,14 @@ vkQualityInitResult VkQualityManager::InitDeviceInfo(JNIEnv *env, DeviceInfo &de
   if (device_info.device.empty()) return kErrorInitializationFailure;
 
   device_info.api_level = android_get_device_api_level();
+
+  device_info.gles_version = GLESUtil::GetGLESVersionString();
+
+  // SoC string will be empty if we can't retrieve it due to older Android version
+  if (device_info.api_level >= kMinSoCAPI) {
+    device_info.soc = GetStaticStringField(env, build_class, kSoCField);
+    if (device_info.soc.empty()) return kErrorInitializationFailure;
+  }
 
   return VulkanUtil::GetDeviceVulkanInfo(device_info);
 }
@@ -291,7 +306,7 @@ vkQualityInitResult VkQualityManager::StartRecommendation() {
           quality_recommendation_ = cache_recommendation_;
         } else {
           VkQualityPredictionFile::FileMatchResult match_result =
-              prediction_file_.FindDeviceMatch(device_info);
+              prediction_file_.FindDeviceMatch(device_info, flags_);
 
           switch (match_result) {
             case VkQualityPredictionFile::kFileMatch_ExactDevice:
@@ -301,9 +316,11 @@ vkQualityInitResult VkQualityManager::StartRecommendation() {
             case VkQualityPredictionFile::kFileMatch_DeviceOldVersion:
               quality_recommendation_ = kRecommendationGLESBecauseOldDriver;
               break;
+            case VkQualityPredictionFile::kFileMatch_DriverAllow:
             case VkQualityPredictionFile::kFileMatch_GpuAllow:
               quality_recommendation_ = kRecommendationVulkanBecausePredictionMatch;
               break;
+            case VkQualityPredictionFile::kFileMatch_DriverDeny:
             case VkQualityPredictionFile::kFileMatch_GpuDeny:
               quality_recommendation_ = kRecommendationGLESBecausePredictionMatch;
               break;

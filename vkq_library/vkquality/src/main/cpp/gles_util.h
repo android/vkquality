@@ -13,16 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-namespace vkqlisteditor.editor;
 
-public class DeviceListProject
-{
-    public int ProjectSchemaVersion { get; set; }
-    public int ExportedListFileVersion { get; set; }
-    public int MinApiForFutureRecommendation { get; set; }
-    public DeviceAllowListRecord[]? DeviceAllowList { get; set; }
-    public DriverFingerprintRecord[]? DriverAllowList { get; set; }
-    public DriverFingerprintRecord[]? DriverDenyList { get; set; }
-    public GpuPredictRecord[]? GpuPredictAllowList { get; set; }
-    public GpuPredictRecord[]? GpuPredictDenyList { get; set; }
-}
+#ifndef VKQUALITY_GLES_UTIL_H_
+#define VKQUALITY_GLES_UTIL_H_
+
+#include "vkquality_manager.h"
+
+namespace vkquality {
+
+class GLESUtil {
+ public:
+  static std::string GetGLESVersionString();
+};
+
+} // namespace vkquality
+
+#endif // VKQUALITY_GLES_UTIL_H_

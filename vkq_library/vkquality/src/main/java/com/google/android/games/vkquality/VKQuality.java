@@ -27,6 +27,7 @@ public class VKQuality {
 
     public static final int INIT_FLAG_SKIP_STARTUP_MITIGATION = 1;
     public static final int INIT_FLAG_GLES_ONLY_STARTUP_MITIGATION_DEVICES = 2;
+    public static final int INIT_FLAG_SKIP_DRIVER_FINGERPRINT_CHECK = 4;
 
     public static final int INIT_SUCCESS = 0;
     public static final int ERROR_INITIALIZATION_FAILURE = -1;
@@ -79,9 +80,9 @@ public class VKQuality {
         {
             Log.d("VKQUALITY", "Skipping startup mitigation because of flag");
         }
-        return startVkQuality(mAppContext.getResources().getAssets(),
+        return startVkQualityFlags(mAppContext.getResources().getAssets(),
                 mAppContext.getFilesDir().getAbsolutePath(),
-                dataFilename);
+                dataFilename, mFlags);
     }
 
     public void StopVkQuality()
@@ -128,6 +129,9 @@ public class VKQuality {
     // JNI native functions
     public native int startVkQuality(AssetManager jasset_manager, String storage_path,
                                      String data_filename);
+
+    public native int startVkQualityFlags(AssetManager jasset_manager, String storage_path,
+                                     String data_filename, int flags);
 
     public native void stopVkQuality();
 

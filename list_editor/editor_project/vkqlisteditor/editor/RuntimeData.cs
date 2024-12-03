@@ -20,6 +20,8 @@ public class RuntimeData
     public RuntimeData()
     {
         DeviceAllowList = new List<DeviceAllowListRecord>();
+        DriverAllowList = new List<DriverFingerprintRecord>();
+        DriverDenyList = new List<DriverFingerprintRecord>();
         GpuPredictAllowList = new List<GpuPredictRecord>();
         GpuPredictDenyList = new List<GpuPredictRecord>();
         DeviceAllowListFilter = new List<int>();
@@ -40,6 +42,8 @@ public class RuntimeData
     public string MergeProjectPath { get; set; }
 
     public List<DeviceAllowListRecord> DeviceAllowList { get; set; }
+    public List<DriverFingerprintRecord> DriverAllowList { get; set; }
+    public List<DriverFingerprintRecord> DriverDenyList { get; set; }
     public List<GpuPredictRecord> GpuPredictAllowList { get; set; }
     public List<GpuPredictRecord> GpuPredictDenyList { get; set; }
     

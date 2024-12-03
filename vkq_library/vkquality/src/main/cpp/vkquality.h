@@ -22,6 +22,18 @@
 #include <jni.h>
 
 /**
+ * @brief Flag bitfields that cam be passed to ::vkQuality_initializeFlags
+ * in the flags parameter.
+ */
+ enum vkQualityInitFlags : int32_t {
+     /**
+      * @brief Disable the quality check against the SoC/driver fingerprint additional
+      * allow/deny list introduced in version 1.2
+      */
+     kInitFlagSkipFingerprintRecommendationCheck = (1 << 2)
+ };
+
+/**
  * @brief Result codes returned by ::vkQuality_initialize.
  */
 enum vkQualityInitResult : int32_t {
@@ -137,6 +149,32 @@ extern "C" {
 vkQualityInitResult vkQuality_initialize(JNIEnv *env, AAssetManager *asset_manager,
                                          const char *storage_path,
                                          const char *asset_filename);
+
+/**
+ * @brief Initialize VkQuality, constructing internal resources.
+ * @param env The JNIEnv attached to the thread calling the function.
+ * @param asset_manager A pointer to an active NDK Asset Manager instance.
+ * Passing nullptr will disable lookup of the quality data file from the
+ * app bundle.
+ * @param storage_path An absolute path to a storage directory. This
+ * directory is assumed to exist and be writable using standard file i/o.
+ * A recommendation cache file will be written in this directory. VkQuality
+ * will look for the quality data file in this directory before looking
+ * in the application bundle. Passing nullptr will disable recommendation caching
+ * and quality data file lookup outside the application bundle.
+ * @param asset_filename The name of the quality data file. This can be a partial
+ * path, but must exist in either the app bundle assets, or in the directory
+ * referenced by `storage_path`
+ * @param flags A bit field of ::vkQualityInitFlags enum values specifying
+ * initialization flags to alter default behavior
+ * @return `kSuccess` if successful, otherwise an error code relating
+ * to initialization failure.
+ * @see vkQuality_destroy
+ */
+vkQualityInitResult vkQuality_initializeFlags(JNIEnv *env, AAssetManager *asset_manager,
+                                         const char *storage_path,
+                                         const char *asset_filename,
+                                         int32_t flags);
 
 /**
  * @brief Destroy resources that VkQuality has created.
