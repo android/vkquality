@@ -64,13 +64,13 @@ android {
         prefab = true
     }
 // Comment out this packaging block if you are building with unit tests enabled
-    packaging {
+//    packaging {
         // use the jniLibs block to exclude .so files.
-        jniLibs {
-            testOnly += "**/libvkq_tests.so"
-            testOnly += "**/libc++_shared.so"
-        }
-    }
+//        jniLibs {
+//            testOnly += "**/libvkq_tests.so"
+//            testOnly += "**/libc++_shared.so"
+//        }
+//    }
 }
 
 dependencies {
