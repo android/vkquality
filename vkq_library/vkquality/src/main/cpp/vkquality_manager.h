@@ -48,7 +48,8 @@ class VkQualityManager {
 
  public:
   VkQualityManager(JNIEnv *env, AAssetManager *asset_manager,
-                   const char *storage_path, const char *asset_filename, int32_t flags,
+                   const char *storage_path, const char *asset_filename, 
+                   const vkqGraphicsAPIInfo *api_info, int32_t flags,
                    ConstructorTag);
 
   ~VkQualityManager() = default;
@@ -56,6 +57,7 @@ class VkQualityManager {
   static vkQualityInitResult Init(JNIEnv *env, AAssetManager *asset_manager,
                                   const char *storage_path,
                                   const char *asset_filename,
+                                  const vkqGraphicsAPIInfo *api_info,
                                   int32_t flags);
 
   static void DestroyInstance(JNIEnv *env);
@@ -69,7 +71,8 @@ class VkQualityManager {
   static std::string GetStaticStringField(JNIEnv *env, jclass clz,
                                           const char *name);
 
-  static vkQualityInitResult InitDeviceInfo(JNIEnv *env, DeviceInfo &device_info);
+  static vkQualityInitResult InitDeviceInfo(JNIEnv *env, DeviceInfo &device_info,
+                                            const vkqGraphicsAPIInfo *api_info);
 
   bool LoadCache(const DeviceInfo &device_info);
 
@@ -90,6 +93,7 @@ class VkQualityManager {
   JNIEnv *env_ = nullptr;
   std::string asset_filename_;
   std::string storage_path_;
+  const vkqGraphicsAPIInfo *api_info_ = nullptr;
 
   int32_t cache_list_version_ = -1;
   int32_t flags_ = 0;

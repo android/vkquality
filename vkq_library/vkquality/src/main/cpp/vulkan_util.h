@@ -23,6 +23,8 @@ namespace vkquality {
 
 class VulkanUtil {
  public:
+  static vkQualityInitResult CopyDeviceVulkanInfo(DeviceInfo &device_info,
+      void *vk_physical_device_properties);
   static vkQualityInitResult GetDeviceVulkanInfo(DeviceInfo &device_info);
   static uint32_t GetMinimumRecommendedVulkanVersion();
   static uint32_t GetVulkanApiVersionForApiLevel(const int device_api_level);

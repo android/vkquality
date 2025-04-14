@@ -38,6 +38,10 @@ feedback will help refine the recommendation list.
 
 ## Version history
 
+* 1.2.1 - (04/14/2025) - Rebuilt library to be compatible with 16Kb page size
+Android devices. Added `vkQuality_initializeFlagsInfo` alternative init function
+for C/C++ users passing their own graphics device information instead of VkQuality
+standing up graphics API instances to query.
 * 1.2 - (12/03/2024) - Added additional quality signal source option, derived from
 pairs of SoC names and driver fingerprint strings. This signal check can be disabled
 using a new `INIT_FLAG_SKIP_DRIVER_FINGERPRINT_CHECK` flag.

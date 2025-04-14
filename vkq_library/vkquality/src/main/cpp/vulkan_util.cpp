@@ -32,6 +32,22 @@ uint32_t VulkanUtil::GetVulkanApiVersionForApiLevel(const int device_api_level) 
   return VK_API_VERSION_1_0;
 }
 
+vkQualityInitResult VulkanUtil::CopyDeviceVulkanInfo(DeviceInfo &device_info,
+    void *vk_physical_device_properties) {
+    if (vk_physical_device_properties == nullptr) {
+      return kErrorNoVulkan;
+    }
+    const VkPhysicalDeviceProperties &device_properties =
+      *(reinterpret_cast<const VkPhysicalDeviceProperties *>(
+        vk_physical_device_properties));
+    device_info.vk_api_version = device_properties.apiVersion;
+    device_info.vk_driver_version = device_properties.driverVersion;
+    device_info.vk_device_id = device_properties.deviceID;
+    device_info.vk_vendor_id = device_properties.vendorID;
+    device_info.vk_device_name = device_properties.deviceName;
+    return kSuccess;
+}
+
 vkQualityInitResult VulkanUtil::GetDeviceVulkanInfo(DeviceInfo &device_info) {
   void *lib_vulkan = dlopen("libvulkan.so", RTLD_NOW | RTLD_LOCAL);
   if (lib_vulkan == nullptr) {
