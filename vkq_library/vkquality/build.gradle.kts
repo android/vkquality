@@ -26,6 +26,7 @@ plugins {
 android {
     namespace = "com.google.android.games.vkquality"
     compileSdk = 35
+    ndkVersion = "27.2.12479018"
 
     defaultConfig {
         minSdk = 22
@@ -36,6 +37,7 @@ android {
             cmake {
                 cppFlags("-std=c++17")
                 arguments += "-DANDROID_STL=c++_static"
+                arguments += "-DANDROID_SUPPORT_FLEXIBLE_PAGE_SIZES=ON"
             }
         }
     }

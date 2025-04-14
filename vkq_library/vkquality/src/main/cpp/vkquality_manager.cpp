@@ -52,6 +52,7 @@ std::unique_ptr<VkQualityManager> VkQualityManager::instance_ = nullptr;
 vkQualityInitResult VkQualityManager::Init(JNIEnv *env, AAssetManager *asset_manager,
                                            const char *storage_path,
                                            const char *asset_filename,
+                                           const vkqGraphicsAPIInfo *api_info,
                                            int32_t flags) {
   std::lock_guard<std::mutex> lock(instance_mutex_);
   if (instance_ != nullptr) {
@@ -60,7 +61,8 @@ vkQualityInitResult VkQualityManager::Init(JNIEnv *env, AAssetManager *asset_man
   }
 
   instance_ = std::make_unique<VkQualityManager>(env, asset_manager,
-                                                 storage_path, asset_filename, flags,
+                                                 storage_path, asset_filename,
+                                                 api_info, flags,
                                                  ConstructorTag{});
   if (instance_ == nullptr) {
     return kErrorInitializationFailure;
@@ -87,12 +89,14 @@ vkQualityRecommendation VkQualityManager::GetQualityRecommendation() {
 }
 
 VkQualityManager::VkQualityManager(JNIEnv *env, AAssetManager *asset_manager,
-                                   const char *storage_path, const char *asset_filename, int32_t flags,
+                                   const char *storage_path, const char *asset_filename,
+                                   const vkqGraphicsAPIInfo *api_info, int32_t flags,
                                    ConstructorTag)
     :asset_manager_(asset_manager)
     ,env_(env)
     ,asset_filename_(asset_filename)
     ,storage_path_()
+    ,api_info_(api_info)
     ,flags_(flags) {
   //ALOGE("INIT PATHS %s %s", storage_path, asset_filename);
   if (storage_path != nullptr) {
@@ -123,7 +127,8 @@ std::string VkQualityManager::GetStaticStringField(JNIEnv *env, jclass clz,
   return ret_value;
 }
 
-vkQualityInitResult VkQualityManager::InitDeviceInfo(JNIEnv *env, DeviceInfo &device_info) {
+vkQualityInitResult VkQualityManager::InitDeviceInfo(JNIEnv *env, DeviceInfo &device_info,
+    const vkqGraphicsAPIInfo *api_info) {
   jclass build_class = env->FindClass(kAndroidBuildClass);
   if (env->ExceptionCheck()) {
     env->ExceptionClear();
@@ -139,7 +144,11 @@ vkQualityInitResult VkQualityManager::InitDeviceInfo(JNIEnv *env, DeviceInfo &de
 
   device_info.api_level = android_get_device_api_level();
 
-  device_info.gles_version = GLESUtil::GetGLESVersionString();
+  if (api_info != nullptr && api_info->gles_version_string != nullptr) {
+    device_info.gles_version = api_info->gles_version_string;
+  } else {
+    device_info.gles_version = GLESUtil::GetGLESVersionString();
+  }
 
   // SoC string will be empty if we can't retrieve it due to older Android version
   if (device_info.api_level >= kMinSoCAPI) {
@@ -147,6 +156,10 @@ vkQualityInitResult VkQualityManager::InitDeviceInfo(JNIEnv *env, DeviceInfo &de
     if (device_info.soc.empty()) return kErrorInitializationFailure;
   }
 
+  if (api_info != nullptr && api_info->vk_physical_device_properties != nullptr) {
+    return VulkanUtil::CopyDeviceVulkanInfo(device_info,
+        api_info->vk_physical_device_properties);
+  }
   return VulkanUtil::GetDeviceVulkanInfo(device_info);
 }
 
@@ -270,7 +283,7 @@ vkQualityInitResult VkQualityManager::StartRecommendation() {
   }
 
   DeviceInfo device_info;
-  vkQualityInitResult result = InitDeviceInfo(env_, device_info);
+  vkQualityInitResult result = InitDeviceInfo(env_, device_info, api_info_);
   if (result != kSuccess) {
     return result;
   }

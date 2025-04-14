@@ -22,7 +22,7 @@ extern "C" {
 
 #define VKQUALITY_MAJOR_VERSION 1
 #define VKQUALITY_MINOR_VERSION 2
-#define VKQUALITY_BUGFIX_VERSION 0
+#define VKQUALITY_BUGFIX_VERSION 1
 
 #define VKQUALITY_GENERATE_PACKED_VERSION(MAJOR, MINOR, BUGFIX) \
     ((MAJOR << 16) | (MINOR << 8) | (BUGFIX))
@@ -51,7 +51,8 @@ uint32_t VkQuality_getVersion() {
 vkQualityInitResult vkQuality_initialize(JNIEnv *env, AAssetManager *asset_manager,
                                          const char *storage_path,
                                          const char *asset_filename) {
-  return vkquality::VkQualityManager::Init(env, asset_manager, storage_path, asset_filename, 0);
+  return vkquality::VkQualityManager::Init(env, asset_manager, storage_path, asset_filename,
+                                           nullptr, 0);
 }
 
 vkQualityInitResult vkQuality_initializeFlags(JNIEnv *env, AAssetManager *asset_manager,
@@ -59,7 +60,16 @@ vkQualityInitResult vkQuality_initializeFlags(JNIEnv *env, AAssetManager *asset_
                                          const char *asset_filename,
                                          int32_t flags) {
     return vkquality::VkQualityManager::Init(env, asset_manager, storage_path, asset_filename,
-                                             flags);
+                                             nullptr, flags);
+}
+
+vkQualityInitResult vkQuality_initializeFlagsInfo(JNIEnv *env, AAssetManager *asset_manager,
+  const char *storage_path,
+  const char *asset_filename,
+  const vkqGraphicsAPIInfo *api_info,
+  int32_t flags) {
+    return vkquality::VkQualityManager::Init(env, asset_manager, storage_path, asset_filename,
+                                             api_info, flags);
 }
 
 void vkQuality_destroy(JNIEnv *env) {

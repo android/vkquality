@@ -123,6 +123,30 @@ enum vkQualityRecommendation : int32_t {
   kRecommendationGLESBecausePredictionMatch
 };
 
+/**
+ * @brief Struct used to optionally pass graphics API information to
+ * ::vkQuality_initializeFlagsInfo so the library can use it for
+ * making a recommendation without having to stand up a graphics API
+ * instance to query. Pointers in the struct may be null and are
+ * only expected to be valid until return from ::vkQuality_initializeFlagsInfo
+ */
+typedef struct vkqGraphicsAPIInfo {
+  /**
+   * @brief If non-null, expected to be a pointer containing the contents
+   * of calling glGetString with the GL_VERSION enum. If a string is provided,
+   * the library will not create a GL instance and instead use the string.
+   */
+   const char *gles_version_string;
+
+  /**
+   * @brief If non-null, expected to be a pointer to a valid 
+   * `vkGetPhysicalDeviceProperties` structure. If provided, the library
+   * will use the data in this structure instead of creating a Vulkan
+   * instance to retrieve it.
+   */
+   void *vk_physical_device_properties;
+} vkqGraphicsAPIInfo;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -175,6 +199,38 @@ vkQualityInitResult vkQuality_initializeFlags(JNIEnv *env, AAssetManager *asset_
                                          const char *storage_path,
                                          const char *asset_filename,
                                          int32_t flags);
+
+/**
+ * @brief Initialize VkQuality, constructing internal resources.
+ * @param env The JNIEnv attached to the thread calling the function.
+ * @param asset_manager A pointer to an active NDK Asset Manager instance.
+ * Passing nullptr will disable lookup of the quality data file from the
+ * app bundle.
+ * @param storage_path An absolute path to a storage directory. This
+ * directory is assumed to exist and be writable using standard file i/o.
+ * A recommendation cache file will be written in this directory. VkQuality
+ * will look for the quality data file in this directory before looking
+ * in the application bundle. Passing nullptr will disable recommendation caching
+ * and quality data file lookup outside the application bundle.
+ * @param asset_filename The name of the quality data file. This can be a partial
+ * path, but must exist in either the app bundle assets, or in the directory
+ * referenced by `storage_path`
+ * @param api_info An optional pointer to a ::GraphicsAPIInfo structure that
+ * can be used to pass API driver/version information to the library. If this
+ * data is provided for a given API, VkQuality will skip initializing the API to
+ * retrieve API information itself and use the provided values for recommendations.
+ * Pointer lifetime is only expected to be valid until function return.
+ * @param flags A bit field of ::vkQualityInitFlags enum values specifying
+ * initialization flags to alter default behavior
+ * @return `kSuccess` if successful, otherwise an error code relating
+ * to initialization failure.
+ * @see vkQuality_destroy
+ */
+ vkQualityInitResult vkQuality_initializeFlagsInfo(JNIEnv *env, AAssetManager *asset_manager,
+                                         const char *storage_path,
+                                         const char *asset_filename,
+                                         const vkqGraphicsAPIInfo *api_info,
+                                         int32_t flags);                                        
 
 /**
  * @brief Destroy resources that VkQuality has created.
