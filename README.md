@@ -38,6 +38,8 @@ feedback will help refine the recommendation list.
 
 ## Version history
 
+* 1.2.2 - (06/09/2025) - Updated device list with additional GPU recommendations
+for Vulkan. Added support for multiple * wildcards in string matching.
 * 1.2.1 - (04/14/2025) - Rebuilt library to be compatible with 16Kb page size
 Android devices. Added `vkQuality_initializeFlagsInfo` alternative init function
 for C/C++ users passing their own graphics device information instead of VkQuality

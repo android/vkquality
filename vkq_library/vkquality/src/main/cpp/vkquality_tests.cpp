@@ -287,6 +287,59 @@ EXPECT_EQ(fh_size, 88);
 EXPECT_NE(fh_size, 0);
 }
 
+static constexpr const char *kTestMatchPartialFullStrings[] = {
+    "PowerVR D-Series DXT-48-1536 MC1",
+    "PowerVR D-Series DXT-48-1536",
+    "PowerVR C-Series CXTP-48-1536 MC1",
+    "PowerVR C-Series CXTP-48-1536",
+    "PowerVR BXM-8-256",
+    "Adreno (TM) 888",
+    "Mali-G725",
+    "Immortalis-G925"
+};
+
+static constexpr size_t kTestMatchPartialFullStringsCount = sizeof(kTestMatchPartialFullStrings) /
+                                                           sizeof(kTestMatchPartialFullStrings[0]);
+
+static constexpr const char *kTestMatchPartialSubStrings[] = {
+    "*DXT-48-1536",
+    "*CXTP-48-1536",
+    "*XT*-64-2048",
+    "*XT*-48-1536",
+//    "PowerVR *XT*-48-1536",
+    "*XT*-16-256",
+    "*XT*-8-256",
+    "*XM-8-256",
+    "^Adreno (TM) 8",
+    "^Mali-G72",
+    "*G925"
+};
+
+static constexpr size_t kTestMatchPartialSubStringsCount = sizeof(kTestMatchPartialSubStrings) /
+    sizeof(kTestMatchPartialSubStrings[0]);
+
+TEST(VkQualityPartialStringMatchTest, Validity)
+{
+  bool all_matched = true;
+  for (size_t full_index = 0; full_index < kTestMatchPartialFullStringsCount; ++full_index) {
+    bool found_partial_match = false;
+    for (size_t sub_index = 0; sub_index < kTestMatchPartialSubStringsCount; ++sub_index) {
+      VkQualityMatching::StringMatchResult result =
+          VkQualityMatching::StringMatches(kTestMatchPartialFullStrings[full_index],
+                                       kTestMatchPartialSubStrings[sub_index]);
+      if (result == VkQualityMatching::kStringMatch_Substring ||
+          result == VkQualityMatching::kStringMatch_Substring_Start) {
+        found_partial_match = true;
+        break;
+      }
+    }
+    if (!found_partial_match) {
+      all_matched = false;
+    }
+  }
+  EXPECT_EQ(all_matched, true);
+}
+
 // VkQUalityPredictionFile ParseFileData tests
 static constexpr uint32_t kTooSmallBuffer[4] {0, 0, 0, 0};
 
