@@ -16,8 +16,62 @@
 
 #include "vkquality_matching.h"
 #include <string.h>
+#include <vector>
 
 namespace vkquality {
+
+static constexpr size_t kMaxWildcards = 4;
+
+size_t VkQualityMatching::CountWildcards(const char *str, size_t *string_length,
+                                         size_t *offset_array) {
+  size_t offset = 0;
+  size_t wildcard_count = 0;
+  while (str[offset] != '\0') {
+    if (str[offset] == '*' && wildcard_count < kMaxWildcards) {
+      offset_array[wildcard_count++] = offset;
+    }
+    ++offset;
+  }
+  *string_length = offset;
+  return wildcard_count;
+}
+
+VkQualityMatching::StringMatchResult VkQualityMatching::WildcardsMatch(
+    const std::string_view &a, const std::string_view &b,
+    const size_t wildcard_count, const size_t wildcard_length,
+    const size_t *wildcard_offsets) {
+  std::vector<char> temp_string;
+  temp_string.reserve(wildcard_length + 1);
+  char *substring = temp_string.data();
+
+  size_t current_index = 0;
+  size_t substring_index = 0;
+  // If the compare string doesn't start with a wildcard, the input string must start with
+  // the prefix chars before the first '*' in the compare string
+  if (b[current_index] != '*') {
+    while(current_index < wildcard_length && b[current_index] != '*') {
+      substring[substring_index++] = b[current_index++];
+    }
+    substring[substring_index] = '\0';
+    if (strstr(a.data(), substring) != a.data())
+      return VkQualityMatching::kStringMatch_None;
+  }
+  // current_index is now at a wildcard, process each substring in turn
+  size_t finished_wildcards = 0;
+  while (finished_wildcards < wildcard_count) {
+    substring_index = 0;
+    ++current_index; // past '*'
+    while(current_index < wildcard_length && b[current_index] != '*') {
+      substring[substring_index++] = b[current_index++];
+    }
+    substring[substring_index] = '\0';
+    if (strstr(a.data(), substring) == nullptr)
+      return VkQualityMatching::kStringMatch_None;
+    ++finished_wildcards;
+  }
+
+  return VkQualityMatching::kStringMatch_Substring;
+}
 
 VkQualityMatching::StringMatchResult VkQualityMatching::StringMatches(
     const std::string_view &a, const std::string_view &b) {
@@ -25,6 +79,20 @@ VkQualityMatching::StringMatchResult VkQualityMatching::StringMatches(
   const size_t b_length = b.length();
   if (a_length == 0 || b_length == 0) {
     return kStringMatch_None;
+  }
+
+  // Wildcard support is basic:
+  // ^foo = match if A starts with 'foo'
+  // *foo = match if A has 'foo'
+  // More advanced * wildcard:
+  // Foo*bar = match if A starts with 'Foo' contains 'bar'
+  // Foo*bar*baz = match if A starts with 'Foo' contains 'bar' and 'baz'
+  // *bar*baz = match if A contains 'bar' and 'baz'
+  size_t wildcard_length = 0;
+  size_t wildcard_offsets[kMaxWildcards];
+  size_t wildcard_count = CountWildcards(b.data(), &wildcard_length, wildcard_offsets);
+  if (wildcard_count > 1 || (wildcard_count == 1 && b[0] != '*')) {
+    return WildcardsMatch(a, b, wildcard_count, wildcard_length, wildcard_offsets);
   }
 
   if (b[0] == '^' && b_length > 1) {

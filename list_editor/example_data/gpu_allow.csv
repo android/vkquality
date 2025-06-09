@@ -2,6 +2,18 @@ MinApi,MinDriver,GpuName,DeviceID,VendorID,Brand
 34,2150252544,^Adreno (TM) 7,0,0,Adreno
 34,2150531090,^Adreno (TM) 8,0,0,Adreno
 34,0,Samsung Xclipse 920,0,0,Xclipse
+34,0,Samsung Xclipse 930,0,0,Xclipse
+34,0,Samsung Xclipse 930A,0,0,Xclipse
 34,0,Samsung Xclipse 940,0,0,Xclipse
+34,0,Samsung Xclipse 950,0,0,Xclipse
+34,192937984,^Mali-G625,0,0,Mali
 34,192937984,^Mali-G71,0,0,Mali
 34,192937984,^Mali-G72,0,0,Mali
+34,192937984,*G925,0,0,Mali
+36,6660496,*DXT-48-1536,0,0,IMG
+36,6660496,*CXTP-48-1536,0,0,IMG
+36,6660496,*XT*-64-2048,0,0,IMG
+36,6660496,*XT*-48-1536,0,0,IMG
+36,6660496,*XT*-16-256,0,0,IMG
+36,6660496,*XT*-8-256,0,0,IMG
+36,6660496,*XM-8-256,0,0,IMG
