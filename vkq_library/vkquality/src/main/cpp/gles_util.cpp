@@ -38,9 +38,15 @@ std::string GLESUtil::GetGLESVersionString() {
 
   EGLint config_count;
   if (eglChooseConfig(egl_display, config_attributes, &egl_config, 1, &config_count) != EGL_TRUE)
+  {
+    eglTerminate(egl_display);
     return result_string;
+  }
   if (config_count != 1)
+  {
+    eglTerminate(egl_display);
     return result_string;
+  }
 
   EGLint surfaceType = 0;
   eglGetConfigAttrib(egl_display, egl_config, EGL_SURFACE_TYPE, &surfaceType);
@@ -61,6 +67,7 @@ std::string GLESUtil::GetGLESVersionString() {
   const EGLint eglError = eglGetError();
   if (eglError != EGL_SUCCESS)
   {
+    eglTerminate(egl_display);
     return result_string;
   }
   const EGLint context_attribs[] = {EGL_CONTEXT_CLIENT_VERSION, 3, EGL_NONE};
@@ -68,15 +75,15 @@ std::string GLESUtil::GetGLESVersionString() {
   if (eglError != EGL_SUCCESS)
   {
     eglDestroySurface(egl_display, egl_surface);
+    eglTerminate(egl_display);
     return result_string;
   }
 
   if (eglMakeCurrent(egl_display, egl_surface, egl_surface, egl_context) == EGL_TRUE) {
     result_string = reinterpret_cast<const char*>(glGetString(GL_VERSION));
-    eglTerminate(egl_display);
+    eglMakeCurrent(egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
   }
 
-  eglMakeCurrent(egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
   eglDestroyContext(egl_display, egl_context);
   eglDestroySurface(egl_display, egl_surface);
   eglTerminate(egl_display);
