@@ -47,6 +47,7 @@ void GLESUtil::GetGLESStrings(std::string& renderer, std::string& version, std::
     eglTerminate(egl_display);
     return;
   }
+  }
 
   EGLint surfaceType = 0;
   eglGetConfigAttrib(egl_display, egl_config, EGL_SURFACE_TYPE, &surfaceType);
@@ -85,7 +86,6 @@ void GLESUtil::GetGLESStrings(std::string& renderer, std::string& version, std::
     vendor = reinterpret_cast<const char*>(glGetString(GL_VENDOR));
   }
 
-  eglMakeCurrent(egl_display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
   eglDestroyContext(egl_display, egl_context);
   eglDestroySurface(egl_display, egl_surface);
   eglTerminate(egl_display);
