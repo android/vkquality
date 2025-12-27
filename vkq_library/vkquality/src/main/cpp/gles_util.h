@@ -21,10 +21,10 @@
 
 namespace vkquality {
 
-class GLESUtil {
- public:
-  static std::string GetGLESVersionString();
-};
+  class GLESUtil {
+  public:
+    static void GetGLESStrings(std::string& renderer, std::string& version, std::string& vendor);
+  };
 
 } // namespace vkquality
 

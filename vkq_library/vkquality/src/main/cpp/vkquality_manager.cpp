@@ -147,7 +147,8 @@ vkQualityInitResult VkQualityManager::InitDeviceInfo(JNIEnv *env, DeviceInfo &de
   if (api_info != nullptr && api_info->gles_version_string != nullptr) {
     device_info.gles_version = api_info->gles_version_string;
   } else {
-    device_info.gles_version = GLESUtil::GetGLESVersionString();
+    GLESUtil::GetGLESStrings(device_info.gles_renderer, device_info.gles_version,
+                             device_info.gles_vendor);
   }
 
   // SoC string will be empty if we can't retrieve it due to older Android version
@@ -341,8 +342,16 @@ vkQualityInitResult VkQualityManager::StartRecommendation() {
               quality_recommendation_ = kRecommendationGLESBecauseNoDeviceMatch;
           }
 
+          std::string driver_lower = device_info.gles_renderer;
+          for (char &lowc : driver_lower) {
+            lowc = static_cast<char>(std::tolower(static_cast<unsigned char>(lowc)));
+          }
           if (quality_recommendation_ == kRecommendationGLESBecauseNoDeviceMatch &&
-              device_info.api_level >= prediction_file_.GetFutureAndroidAPILevel()) {
+              strstr(driver_lower.c_str(), "angle") != nullptr) {
+            // Recommend Vulkan on unrecognized devices when ANGLE is the GLES driver
+            quality_recommendation_ = kRecommendationVulkanBecausePredictionMatch;
+          } else if (quality_recommendation_ == kRecommendationGLESBecauseNoDeviceMatch &&
+                     device_info.api_level >= prediction_file_.GetFutureAndroidAPILevel()) {
             quality_recommendation_ = kRecommendationVulkanBecauseFutureAndroid;
           }
           cache_list_version_ = prediction_file_.GetListVersion();
